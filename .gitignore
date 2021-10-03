@@ -1,3 +1,14 @@
+# misc model and data files
+*_model/
+*_models/
+*.csv
+*.h5
+*.hdf5
+*.pkl
+
+*.ipynb_checkpoints
+*.idea
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -73,9 +84,6 @@ docs/_build/
 
 # PyBuilder
 target/
-
-# Jupyter Notebook
-.ipynb_checkpoints
 
 # IPython
 profile_default/
