@@ -1,10 +1,13 @@
 # misc model and data files
 *_model/
 *_models/
+data_csv/
+data_h5
 *.csv
 *.h5
 *.hdf5
 *.pkl
+*.npy
 
 *.ipynb_checkpoints
 *.idea
