@@ -51,8 +51,8 @@ for fi in range(0, len(flight_classes)):
                    model=model,
                    early_stop=True,
                    min_delta=.1,
-                   patience=50,
+                   patience=25,
                    monitor='loss',
                    batch_size=64,
-                   epochs=1000,
+                   epochs=300,
                    lr=.0001)
