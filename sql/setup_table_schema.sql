@@ -1,5 +1,5 @@
 
-
+-- NOTE tables are not timescaledb hyptertables yet.....
 
 /*
 	fields:
@@ -103,7 +103,7 @@ create table summary_tb(
     "TRA" float not null,
     "T2" float not null
 );
-select create_hypertable('summary_tb', 'asset_id', 'id');
+-- select create_hypertable('summary_tb', 'asset_id', 'id', chunk_time_interval => 1000000);
 
 
 /*
@@ -130,7 +130,7 @@ create table telemetry_tb(
     unique("id", "dt")
 );
 -- create partitions on id, then dt
-select create_hypertable('telemetry_tb', 'id', 'dt');
+-- select create_hypertable('telemetry_tb', 'id', 'dt');
 
 
 create table degradation_tb(
@@ -148,7 +148,7 @@ create table degradation_tb(
     "LPT_flow_mod" float not null
 );
 -- create the partitions based on id, then health state
-select create_hypertable('degradation_tb', 'id', 'hs');
+-- select create_hypertable('degradation_tb', 'id', 'hs');
 
 
 
