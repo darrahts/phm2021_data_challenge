@@ -1,9 +1,6 @@
 
 
 
-
-create extension if not exists timescaledb cascade;
-
 /*
 	fields:
 		type: refers to the process such as degradation, environment, etc
@@ -50,6 +47,9 @@ create table asset_type_tb(
 
 	There is not a table-wide unique constraint on this table because we can have more than one component of the same type,
 	only the serial number has to be unique.
+
+    ALL CUSTOM COMPONENT TABLES MUST HAVE THE FOLLOWING COLUMN DEFINITION REFERENCING THIS TABLE
+        "id" int primary key not null references asset_tb(id)
 */
 create table asset_tb(
     "id" serial primary key not null,
@@ -75,30 +75,38 @@ create table group_tb(
 );
 
 
+/*
+    This is a custom component table for the N-CMAPSS dataset. 
+    group_id is a proxy for flight class
+*/
 create table engine_tb(
     "id" int primary key not null references asset_tb(id),
     "group_id" int not null references group_tb(id),
     "unit" int not null,
     "dataset" varchar(32) not null,
-    "num_cycles" int not null,
-    unique()
+    unique(id, group_id, unit, dataset)
 );
 -- select create_hypertable
 
 
+/*
+    scenario descriptors and cycle, links to asset_id which contains aux data
+*/
 create table summary_tb(
     "id" serial primary key not null,
-    "cycle" int not null,
     "asset_id" int not null references asset_tb(id),
+    "cycle" int not null,
     "alt" float not null,
     "Mach" float not null,
     "TRA" float not null,
-    "T2" float not null,
-    unique()
+    "T2" float not null
 );
 -- select create_hypertable
 
 
+/*
+    measurements
+*/
 create table telemetry_tb(
     "dt" timestamptz(6) not null,
     "id" int references summary_tb(id),
@@ -116,7 +124,7 @@ create table telemetry_tb(
     "Ps30" float not null,
     "P40" float not null,
     "P50" float not null,
-    unique()
+    unique("id", "Wf", "Nf", "Ne", "T24", "T30", "T48", "T50", "P15", "P2", "P21", "P24", "Ps30", "P40", "P50")
 );
 -- select create_hypertable
 
@@ -133,8 +141,7 @@ create table degradation_tb(
     "HPT_eff_mod" float not null,
     "HPT_flow_mod" float not null,
     "LPT_eff_mod" float not null,
-    "LPT_flow_mod" float not null,
-    unique()
+    "LPT_flow_mod" float not null
 );
 -- select create_hypertable
 
