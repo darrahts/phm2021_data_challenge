@@ -66,13 +66,16 @@ create table asset_tb(
 
 
 /*
-	This is a helper table that is used in conjunction with flight_summary_tb to help organize multiple flights.
-	The first group has an id of 1 with info of "example".
+	this table is used for flight classes
 */
 create table group_tb(
 	id serial primary key not null,
 	info varchar(256) unique not null
 );
+
+insert into group_tb(info) values('flight length 1 - 3 hours');
+insert into group_tb(info) values('flight length 3 - 5 hours');
+insert into group_tb(info) values('flight length > 5 hours');
 
 
 /*
@@ -86,7 +89,6 @@ create table engine_tb(
     "dataset" varchar(32) not null,
     unique(id, group_id, unit, dataset)
 );
--- select create_hypertable
 
 
 /*
@@ -101,15 +103,15 @@ create table summary_tb(
     "TRA" float not null,
     "T2" float not null
 );
--- select create_hypertable
+select create_hypertable('summary_tb', 'asset_id', 'id');
 
 
 /*
-    measurements
+    measurements, dt is not unique because multiple units could (and will) have the same dt
 */
 create table telemetry_tb(
-    "dt" timestamptz(6) not null,
     "id" int references summary_tb(id),
+    "dt" timestamptz(6) not null,
     "Wf" float not null,
     "Nf" float not null,
     "Ne" float not null,
@@ -124,9 +126,11 @@ create table telemetry_tb(
     "Ps30" float not null,
     "P40" float not null,
     "P50" float not null,
-    unique("id", "Wf", "Nf", "Ne", "T24", "T30", "T48", "T50", "P15", "P2", "P21", "P24", "Ps30", "P40", "P50")
+    unique("id", "Wf", "Nf", "Ne", "T24", "T30", "T48", "T50", "P15", "P2", "P21", "P24", "Ps30", "P40", "P50"),
+    unique("id", "dt")
 );
--- select create_hypertable
+-- create partitions on id, then dt
+select create_hypertable('telemetry_tb', 'id', 'dt');
 
 
 create table degradation_tb(
@@ -143,7 +147,8 @@ create table degradation_tb(
     "LPT_eff_mod" float not null,
     "LPT_flow_mod" float not null
 );
--- select create_hypertable
+-- create the partitions based on id, then health state
+select create_hypertable('degradation_tb', 'id', 'hs');
 
 
 
