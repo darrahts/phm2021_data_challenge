@@ -1,13 +1,13 @@
-import boto3
-import base64
-import os
-from botocore.exceptions import ClientError
-import json
+# import boto3
+# import base64
+# import os
+# from botocore.exceptions import ClientError
+# import json
 import psycopg2
 import pandas as pd
-import numpy as np
-from datetime import datetime, timedelta
-import sys
+# import numpy as np
+# from datetime import datetime, timedelta
+# import sys
 import traceback
 
 
@@ -50,7 +50,7 @@ class DB:
     @staticmethod
     def execute(sql_query: str, database: psycopg2.extensions.connection) -> pd.DataFrame:
         """
-            @brief: shorthand sql style execution
+            @brief: shorthand sql style execution, preferred method for select statements
 
             @params:
                 sql_query: the query string to execute
@@ -59,11 +59,7 @@ class DB:
             @returns: a pandas table of the query results
         """
         try:
-            if ('insert' in sql_query):
-                print("insert here")
-                pd.read_sql_query(sql_query, database)
-            else:
-                return pd.read_sql_query(sql_query, database)
+            return pd.read_sql_query(sql_query, database)
         except Exception as e:
             print(e)
             print(traceback.print_exc())
@@ -76,118 +72,157 @@ class DB:
         """Returns a DataFrame of the tables in a given database"""
         return DB.execute("""SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'""", db)
 
+
+
     @staticmethod
-    def get_fields(tb: str, db: psycopg2.extensions.connection) -> pd.DataFrame:
+    def get_fields(tb: str = None,
+                   as_list: bool = True,
+                   db: psycopg2.extensions.connection = None) -> pd.DataFrame or list:
         """Returns the fields (column headers) for a given table"""
-        return DB.execute("""SELECT column_name FROM INFORMATION_SCHEMA.COLUMNS WHERE table_name = '{}';""".format(tb),
-                          db)
 
+        assert tb is not None and db is not None, '[ERROR] must supply the name of the table (tb=__) and psycopg2.extensions.connection (db=__)'
 
-class Utils:
-    """
-        @brief: static class for utility functions
-
-        @definitions:
-            get_aws_secret(secret_name, region_name)
-    """
-
-    @staticmethod
-    def get_aws_secret(secret_name: str = "", region_name: str = "us-east-1") -> {}:
-        """
-            @brief: retrieves a secret stored in AWS Secrets Manager. Requires AWS CLI and IAM user profile properly configured.
-
-            @input:
-                secret_name: the name of the secret
-                region_name: region of use, default=us-east-1
-
-            @output:
-                secret: dictionary
-        """
-        client = boto3.session.Session().client(service_name='secretsmanager', region_name=region_name)
-        secret = '{"None": "None"}'
-        if (len(secret_name) < 1):
-            print("[ERROR] no secret name provided.")
+        res = DB.execute("""SELECT column_name FROM INFORMATION_SCHEMA.COLUMNS WHERE table_name = '{}';""".format(tb), db)
+        if not as_list:
+            return res
         else:
-            try:
-                res = client.get_secret_value(SecretId=secret_name)
-                if 'SecretString' in res:
-                    secret = res['SecretString']
-                elif 'SecretBinary' in res:
-                    secret = base64.b64decode(res['SecretBinary'])
-                else:
-                    print("[ERROR] secret keys not found in response.")
-            except ClientError as e:
-                print(e)
+            return [col for cols in res.values.tolist() for col in cols]
 
-        return json.loads(secret)
+
 
     @staticmethod
-    def get_config(filename: str = r'', section: str = 'postgresql') -> {}:
-        """
-            @brief: [DEPRECIATED] parses a database configuration file
+    def batch_insert(db: psycopg2.extensions.connection,
+                     tb: str,
+                     cols: list,
+                     values: list,
+                     cur: psycopg2.extensions.cursor) -> bool:
+        assert type(values[0]) == tuple, '[ERROR] values must be a list of tuples'
+        values = ','.join(cur.mogrify("(%s,%s)", x).decode('utf-8') for x in values)
+        cur.execute(f"""INSERT INTO {tb} {str(tuple(cols)).replace("'", '"')} VALUES {values};""")
+        db.commit()
+        return True
 
-            @params:
-                filename: configuraiton file with .ini extension
-                section: the type of db
 
-            @returns:
-                config: dictionary of database configuration settings
-        """
-        from configparser import ConfigParser
-        parser = ConfigParser()
-        config = {}
+
+    @staticmethod
+    def _create_asset_type(asset_type: str = None,
+                           subtype: str = None,
+                           description: str = None,
+                           db: psycopg2.extensions.connection = None,
+                           cur: psycopg2.extensions.cursor = None) -> int:
+        assert asset_type is not None and subtype is not None, "[ERROR] must supply <asset_type>(str) and <subtype>(str)."
 
         try:
-            parser.read(filename)
-        except:
-            print("[ERROR] failed to read file. does it exist?")
-            return config
+            if description is not None:
+                cur.execute(f"""INSERT INTO asset_type_tb ("type", "subtype","description") values ('{asset_type}', '{subtype}', '{description}');""")
+            else:
+                cur.execute(f"""INSERT INTO asset_type_tb ("type", "subtype") values ('{asset_type}', '{subtype}');""")
+            db.commit()
+        except psycopg2.errors.UniqueViolation:
+            print("[ERROR] asset_type already exists.")
+        asset_type_id = DB._get_asset_type(asset_type=asset_type, subtype=subtype, db=db)
 
-        if parser.has_section(section):
-            params = parser.items(section)
-            for param in params:
-                config[param[0]] = param[1]
+        return asset_type_id
+
+
+
+
+    @staticmethod
+    def _get_asset_type(asset_type: str = None,
+                        subtype: str = None,
+                        db: psycopg2.extensions.connection = None) -> int:
+        assert asset_type is not None and subtype is not None, "[ERROR] must supply <asset_type>(str) and <subtype>(str)."
+        try:
+            return int(DB.execute(f"""select id from asset_type_tb where "type" ilike '%{asset_type}%' and "subtype" ilike '%{subtype}%';""", db).values[0][0])
+        except IndexError:
+            print("[ERROR] asset_type does not exist")
+            return -1
+
+
+
+
+    @staticmethod
+    def _create_asset(type_id: int = None,
+                      owner: str = '',
+                      process_id: int = None,
+                      serial_number: str = '',
+                      common_name: str = '',
+                      age: int = None,
+                      eol: int = None,
+                      rul: int = None,
+                      units: str = None,
+                      db: psycopg2.extensions.connection = None,
+                      cur: psycopg2.extensions.cursor = None,
+                      sandbox=False):
+        assert type_id is not None and type(type_id) == int, '[ERROR] must supply <type_id>(int)'
+        statement = 'insert into asset_tb("type_id"'
+        values = [type_id]
+        if len(owner) > 2:
+            statement = statement + ',"owner"'
+            values.append(owner)
+        if process_id is not None and type(process_id) == int:
+            statement = statement + ',"process_id"'
+            values.append(process_id)
+        if len(serial_number) > 2:
+            statement = statement + ',"serial_number"'
+            values.append(serial_number)
+        if len(common_name) > 2:
+            statement = statement + ',"common_name"'
+            values.append(common_name)
+        if age is not None and type(age) == int:
+            statement = statement + ',"age"'
+            values.append(age)
+        if eol is not None and type(eol) == int:
+            statement = statement + ',"eol"'
+            values.append(eol)
+        if rul is not None and type(rul) == int:
+            statement = statement + ',"rul"'
+            values.append(rul)
+        if units is not None:
+            statement = statement + ',"units"'
+            values.append(units)
+        statement = statement + f""") values {tuple(values)};"""
+        if sandbox:
+            print(statement)
         else:
-            print('[ERROR] Section {0} not found in the {1} file'.format(section, filename))
-            return config
+            try:
+                cur.execute(statement)
+                db.commit()
+            except psycopg2.errors.UniqueViolation:
+                print("[ERROR] component already exists (serial numbers must be unique).")
+        return
 
-        return config
+
+    @staticmethod
+    def _get_asset():
+        pass
 
 
-# usage
-"""
-params = Utils.get_aws_secret("/secret/uav_db")
-db, cur =  DB.connect(params)
-del(params)
-db_tables = DB.get_tables(db)
-print(db_tables)
-"""
 
-# output
-"""
-   [INFO] connecting to db.
-   [INFO] connected.
-                     table_name
-   0                   model_tb
-   1        system_parameter_tb
-   2                eq_motor_tb
-   3   degradation_parameter_tb
-   4                 mission_tb
-   5         pg_stat_statements
-   6          battery_sensor_tb
-   7              experiment_tb
-   8             twin_params_tb
-   9              trajectory_tb
-   10               airframe_tb
-   11             asset_type_tb
-   12                  asset_tb
-   13       default_airframe_tb
-   14               dc_motor_tb
-   15            eqc_battery_tb
-   16                    uav_tb
-   17                      test
 
-   Process finished with exit code 0
-"""
-#
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

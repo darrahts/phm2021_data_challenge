@@ -5,6 +5,11 @@ from pandas import DataFrame
 import random
 import tensorflow as tf
 import matplotlib.pyplot as plt
+import boto3
+import base64
+from botocore.exceptions import ClientError
+import json
+import os
 
 h5_dir = 'data_h5/'
 csv_dir = 'data_csv/'
@@ -286,3 +291,66 @@ def make_plot(type: str = '',
             fig.savefig(directory + 'loss.png')
     if save_fig > 1:
         fig.show()
+
+
+
+def get_aws_secret(secret_name: str = "", region_name: str = "us-east-1") -> {}:
+        """
+            @brief: retrieves a secret stored in AWS Secrets Manager. Requires AWS CLI and IAM user profile properly configured.
+
+            @input:
+                secret_name: the name of the secret
+                region_name: region of use, default=us-east-1
+
+            @output:
+                secret: dictionary
+        """
+        client = boto3.session.Session().client(service_name='secretsmanager', region_name=region_name)
+        secret = '{"None": "None"}'
+        if (len(secret_name) < 1):
+            print("[ERROR] no secret name provided.")
+        else:
+            try:
+                res = client.get_secret_value(SecretId=secret_name)
+                if 'SecretString' in res:
+                    secret = res['SecretString']
+                elif 'SecretBinary' in res:
+                    secret = base64.b64decode(res['SecretBinary'])
+                else:
+                    print("[ERROR] secret keys not found in response.")
+            except ClientError as e:
+                print(e)
+
+        return json.loads(secret)
+
+def get_current_user():
+    user = os.environ.get('USER')
+    if user is None:
+        user = os.environ.get('USERNAME')
+    if user is None:
+        user = 'user'
+    return user
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
