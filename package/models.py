@@ -2,6 +2,10 @@ from tensorflow import keras
 from tensorflow.keras import layers, regularizers
 
 
+### NOTE - CURRENTLY USES LOCAL FILES, NOT DB
+### TODO - REFACTOR FOR DATABASE USAGE
+
+
 def dnn(lookback, n_features, n_out):
     inputs = keras.Input(shape=(lookback, n_features), name='in1')
     x = layers.Dense(units=64, kernel_regularizer=regularizers.l2(.01))(inputs)

@@ -6,6 +6,9 @@ import models
 import training
 
 
+### NOTE - CURRENTLY USES LOCAL FILES, NOT DB
+### TODO - REFACTOR FOR DATABASE USAGE
+
 # enable gpu memory growth
 utils.check_gpu()
 

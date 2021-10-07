@@ -7,6 +7,8 @@ import pickle
 
 
 
+### NOTE - CURRENTLY USES LOCAL FILES, NOT DB
+### TODO - REFACTOR FOR DATABASE USAGE
 
 def prepare_for_training(df: pd.DataFrame = None,
                          lookback: int = 10,

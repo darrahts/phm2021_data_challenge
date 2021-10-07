@@ -4,6 +4,10 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import utils
 import pandas as pd
 
+### NOTE - CURRENTLY USES LOCAL FILES, NOT DB
+### TODO - REFACTOR FOR DATABASE USAGE
+### ALSO THIS FILE MAY BE OBSOLETE ?
+
 #
 #       set1: all parameters (xs, xv, w, 0)
 #       set2: reduced parameters (2, xv, w, 0)

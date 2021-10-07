@@ -3,6 +3,11 @@ import numpy as np
 import utils
 import os
 
+
+### NOTE - CURRENTLY USES LOCAL FILES, NOT DB
+### TODO - REFACTOR FOR DATABASE USAGE
+
+
 def train(X_train: np.array = None,
           y_train: np.array = None,
           X_val: np.array = None,

@@ -2,6 +2,11 @@ import numpy as np
 import models
 import training
 
+
+### NOTE - CURRENTLY USES LOCAL FILES, NOT DB
+### TODO - REFACTOR FOR DATABASE USAGE
+
+
 dataset_dirs = [
     'experiments/lstm_rul_ds08/',
     'experiments/lstm_rul_ds01-07/'
