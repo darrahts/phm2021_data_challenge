@@ -1,7 +1,7 @@
 ------------------------------------------------------------------------------------------------
 ------------------------------------------------------------------------------------------------
 /*
-            This script will create a database named uav_db and a user with the currently logged in user,
+            This script will create a database named ncmapss_db and a user with the currently logged in user,
             grant permissions to the database and make the user a superuser.
 
             Tim Darrah
