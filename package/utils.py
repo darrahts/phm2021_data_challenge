@@ -10,12 +10,15 @@ import base64
 from botocore.exceptions import ClientError
 import json
 import os
+import string
 
 h5_dir = 'data_h5/'
 csv_dir = 'data_csv/'
 exp_dir = 'experiments/'
 fnames = ['N-CMAPSS_DS08a-009.h5', 'N-CMAPSS_DS08c-008.h5']
 sets = ['dev', 'test']
+
+
 
 def check_gpu():
     print(tf.__version__)
@@ -25,6 +28,7 @@ def check_gpu():
     if(has_gpu):
         tf.config.experimental.set_memory_growth(gpu[0], True)
     return has_gpu
+
 
 
 def load_h5(fnames: list = [],
@@ -48,14 +52,14 @@ def load_h5(fnames: list = [],
                 a_data = np.array(hdf.get(f"A_{_set}"))
                 w_data = np.array(hdf.get(f"W_{_set}"))
                 x_data = np.array(hdf.get(f"X_s_{_set}"))
-                xv_data = np.array(hdf.get(f"X_v_{_set}"))
+                v_data = np.array(hdf.get(f"X_v_{_set}"))
                 t_data = np.array(hdf.get(f"T_{_set}"))
                 y_data = np.array(hdf.get(f"Y_{_set}"))
 
                 a_labels = [l.decode('utf-8') for l in list(np.array(hdf.get('A_var')))]
                 w_labels = [l.decode('utf-8') for l in list(np.array(hdf.get('W_var')))]
                 x_labels = [l.decode('utf-8') for l in list(np.array(hdf.get('X_s_var')))]
-                xv_labels = [l.decode('utf-8') for l in list(np.array(hdf.get('X_v_var')))]
+                v_labels = [l.decode('utf-8') for l in list(np.array(hdf.get('X_v_var')))]
                 t_labels = [l.decode('utf-8') for l in list(np.array(hdf.get('T_var')))]
 
             df_a = DataFrame(data=a_data, columns=a_labels)
@@ -63,7 +67,7 @@ def load_h5(fnames: list = [],
             df_a['dataset'] = filename.split('_')[1].split('.')[0]
             df_w = DataFrame(data=w_data, columns=w_labels)
             df_x = DataFrame(data=x_data, columns=x_labels)
-            df_xv = DataFrame(data=xv_data, columns=xv_labels)
+            df_v = DataFrame(data=v_data, columns=v_labels)
             df_t = DataFrame(data=t_data, columns=t_labels)
             df_y = DataFrame(data=y_data, columns=['y'])
             if verbose:
@@ -72,7 +76,7 @@ def load_h5(fnames: list = [],
                 df_a.loc[df_a['unit'] == n, 'ui'] = ui
                 ui = ui + 1
 
-            df_temp = pd.concat([df_a, df_y, df_w, df_x, df_xv, df_t], axis=1)
+            df_temp = pd.concat([df_a, df_y, df_w, df_x, df_v, df_t], axis=1)
             if verbose:
                 print(df_temp.head())
             if (len(df)) == 0:
@@ -80,17 +84,22 @@ def load_h5(fnames: list = [],
             else:
                 df = pd.concat([df, df_temp], axis=0)
 
-    df_aux = df[['ui', 'Fc', 'unit', 'y', 'dataset']].groupby('ui').agg('max')
+    df_aux = df[['ui', 'Fc', 'unit', 'dataset', 'cycle']].groupby('ui').agg({'Fc': 'max',
+                                                                             'unit': 'max',
+                                                                             'dataset': 'max',
+                                                                             'cycle': ['min', 'max']})
     df_aux.reset_index(inplace=True)
+    df_aux.columns = ['ui', 'group_id', 'unit', 'dataset', 'age', 'eol']
+    df_aux.age = df_aux.age - 1.0
+    df_aux.drop(columns=['ui'], inplace=True)
 
     y_labels = t_labels
-    t_labels = []
-    t_labels.append(w_labels)
-    t_labels.append(x_labels)
+    t_labels = [w_labels, x_labels]
     t_labels = [l for labels in t_labels for l in labels]
     if verbose:
         print(y_labels)
         print(t_labels)
+        
     if save > 0:
         if verbose:
             print(f"[INFO] saving dataframe.")
@@ -108,11 +117,13 @@ def load_h5(fnames: list = [],
                 f.write(f"{l}\n")
 
         with open(csv_dir + 'v_labels.txt', "w") as f:
-            for l in xv_labels:
+            for l in v_labels:
                 f.write(f"{l}\n")
 
     if save == 2 or save == 0:
-        return df, df_aux, y_labels, t_labels
+        return df, df_aux, y_labels, t_labels, v_labels
+
+
 
 def resample_df(df: pd.DataFrame = pd.DataFrame(),
                 factor: int = 10,
@@ -129,6 +140,8 @@ def resample_df(df: pd.DataFrame = pd.DataFrame(),
         df.to_csv(csv_dir + save_as)
     if save == 2 or save == 0:
         return df
+
+
 
 def interp_y(df: pd.DataFrame = None,
              csv_dir: str = '',
@@ -147,6 +160,7 @@ def interp_y(df: pd.DataFrame = None,
         df.to_csv(csv_dir + save_as)
     if save == 2 or save == 0:
         return df
+
 
 
 def train_test_split(df: pd.DataFrame = None,
@@ -191,6 +205,8 @@ def train_test_split(df: pd.DataFrame = None,
     test_y = np.array(test_df.y, dtype=np.float32)
 
     return train_df, train_y, val_df, val_y, test_df, test_y
+
+
 
 def temporalize_data(inputs, outputs, lookback, horizon, n_features, n_out):
     """
@@ -323,6 +339,8 @@ def get_aws_secret(secret_name: str = "", region_name: str = "us-east-1") -> {}:
 
         return json.loads(secret)
 
+
+
 def get_current_user():
     user = os.environ.get('USER')
     if user is None:
@@ -332,6 +350,9 @@ def get_current_user():
     return user
 
 
+
+def generate_serial_number(length: int = 8) -> str:
+    return ''.join(random.choices(string.digits + string.ascii_letters, k=length))
 
 
 

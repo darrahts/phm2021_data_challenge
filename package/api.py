@@ -75,6 +75,17 @@ class DB:
 
 
     @staticmethod
+    def table_exists(tb: str = '',
+                     db: psycopg2.extensions.connection = None) -> bool:
+        res = DB.execute(f"""select * from information_schema.tables where table_schema = 'public' and table_name = '{tb}';""", db)
+        if len(res.table_name.values) > 0:
+            return True
+        else:
+            return False
+
+
+
+    @staticmethod
     def get_fields(tb: str = None,
                    as_list: bool = True,
                    db: psycopg2.extensions.connection = None) -> pd.DataFrame or list:
@@ -109,7 +120,7 @@ class DB:
                            subtype: str = None,
                            description: str = None,
                            db: psycopg2.extensions.connection = None,
-                           cur: psycopg2.extensions.cursor = None) -> int:
+                           cur: psycopg2.extensions.cursor = None) -> pd.DataFrame:
         assert asset_type is not None and subtype is not None, "[ERROR] must supply <asset_type>(str) and <subtype>(str)."
 
         try:
@@ -120,9 +131,9 @@ class DB:
             db.commit()
         except psycopg2.errors.UniqueViolation:
             print("[ERROR] asset_type already exists.")
-        asset_type_id = DB._get_asset_type(asset_type=asset_type, subtype=subtype, db=db)
+        asset_type_df = DB._get_asset_type(asset_type=asset_type, subtype=subtype, id_only=False, db=db)
 
-        return asset_type_id
+        return asset_type_df
 
 
 
@@ -130,14 +141,25 @@ class DB:
     @staticmethod
     def _get_asset_type(asset_type: str = None,
                         subtype: str = None,
+                        type_id: int = None,
+                        id_only: bool = True,
                         db: psycopg2.extensions.connection = None) -> int:
-        assert asset_type is not None and subtype is not None, "[ERROR] must supply <asset_type>(str) and <subtype>(str)."
+        assert type_id or (asset_type is not None and subtype is not None) is not None, "[ERROR] must supply <asset_type>(str) and <subtype>(str), or <type_id>(int)."
         try:
-            return int(DB.execute(f"""select id from asset_type_tb where "type" ilike '%{asset_type}%' and "subtype" ilike '%{subtype}%';""", db).values[0][0])
-        except IndexError:
-            print("[ERROR] asset_type does not exist")
-            return -1
+            if type_id is not None:
+                id_only = False
+                statement = f"""select * from asset_type_tb where "id" = {type_id}"""
+            else:
+                statement = f"""select * from asset_type_tb where "type" ilike '%{asset_type}%' and "subtype" ilike '%{subtype}%';"""
 
+            res = DB.execute(statement, db)
+            if id_only:
+                return int(res.id.values[0])
+            else:
+                return res
+        except IndexError:
+            print("[ERROR] asset_type does not exist or invalid parameters passed")
+            return -1
 
 
 
@@ -147,9 +169,9 @@ class DB:
                       process_id: int = None,
                       serial_number: str = '',
                       common_name: str = '',
-                      age: int = None,
-                      eol: int = None,
-                      rul: int = None,
+                      age: float = None,
+                      eol: float = None,
+                      rul: float = None,
                       units: str = None,
                       db: psycopg2.extensions.connection = None,
                       cur: psycopg2.extensions.cursor = None,
@@ -169,13 +191,13 @@ class DB:
         if len(common_name) > 2:
             statement = statement + ',"common_name"'
             values.append(common_name)
-        if age is not None and type(age) == int:
+        if age is not None and type(age) == float:
             statement = statement + ',"age"'
             values.append(age)
-        if eol is not None and type(eol) == int:
+        if eol is not None and type(eol) == float:
             statement = statement + ',"eol"'
             values.append(eol)
-        if rul is not None and type(rul) == int:
+        if rul is not None and type(rul) == float:
             statement = statement + ',"rul"'
             values.append(rul)
         if units is not None:
@@ -184,18 +206,71 @@ class DB:
         statement = statement + f""") values {tuple(values)};"""
         if sandbox:
             print(statement)
+            return statement
         else:
             try:
                 cur.execute(statement)
                 db.commit()
             except psycopg2.errors.UniqueViolation:
-                print("[ERROR] component already exists (serial numbers must be unique).")
-        return
+                print("[ERROR] asset already exists (serial numbers must be unique).")
+            return DB._get_asset(serial_number=serial_number, db=db)
 
 
     @staticmethod
-    def _get_asset():
-        pass
+    def _get_asset(serial_number: str = None,
+                   id: int = None,
+                   db: psycopg2.extensions.connection = None):
+        assert serial_number is not None or id is not None, '[ERROR] must supply <serial_number>(str) or <id>(int)'
+        assert db is not None, '[ERROR] must pass <db>(psycopg2.extensions.connection)'
+        if serial_number is not None:
+            statement = f"""select * from asset_tb where "serial_number" = '{serial_number}';"""
+        else:
+            statement = f"""select * from asset_tb where "id" = {id};"""
+        return DB.execute(statement, db)
+
+
+
+
+    @staticmethod
+    def _create_component(asset: pd.DataFrame = None,
+                          group_id: int = None,
+                          unit: int = None,
+                          dataset: str = None,
+                          db: psycopg2.extensions.connection = None,
+                          cur: psycopg2.extensions.cursor = None):
+        assert asset is not None and group_id is not None and unit is not None and dataset is not None, '[ERROR] must supply all parameters'
+        asset_type = DB._get_asset_type(type_id=asset.type_id.values[0], db=db)
+        assert len(asset_type) > 0, f'[ERROR] a valid asset type was not found with id <{asset.type_id.values[0]}>'
+
+        table_name = f"{asset_type.type.values[0]}_{asset_type.subtype.values[0]}_tb"
+        assert DB.table_exists(table_name, db), f'[ERROR] table <{table_name}> does not exist'
+
+        statement = f"""insert into {table_name}("id", "group_id", "unit", "dataset") values ({asset.id.values[0]}, {group_id}, {unit}, '{dataset}');"""
+        try:
+            cur.execute(statement)
+            db.commit()
+        except Exception as e:
+            print(e)
+
+
+
+    # @staticmethod
+    # def _create_component(asset_type: pd.DataFrame = None,
+    #                       group_id: int = None,
+    #                       unit: int = None,
+    #                       dataset: str = None,
+    #                       db: psycopg2.extensions.connection = None,
+    #                       cur: psycopg2.extensions.cursor = None):
+    #     assert asset_type is not None and group_id is not None and unit is not None and dataset is not None, '[ERROR] must supply all parameters'
+    #     table_name = f"{asset_type.type.values[0]}_{asset_type.subtype.values[0]}_tb"
+    #     assert DB.table_exists(table_name, db), f'[ERROR] table <{table_name}> does not exist'
+    #
+    #     statement = f"""insert into {table_name}("id", "group_id", "unit", "dataset") values ({asset_type.id.values[0]}, {group_id}, {unit}, '{dataset}');"""
+    #     try:
+    #         cur.execute(statement)
+    #         db.commit()
+    #     except Exception as e:
+    #         print(e)
 
 
 
