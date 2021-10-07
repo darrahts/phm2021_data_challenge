@@ -35,10 +35,10 @@ create table process_tb(
 */
 create table asset_type_tb(
     "id" serial primary key not null,
-    "type" varchar(32) unique not null,
-    "subtype" varchar(32) unique not null,
+    "type" varchar(32) not null,
+    "subtype" varchar(32) not null,
     "description" varchar(256),
-    unique ("type", "subtype", "description")
+    unique ("type", "subtype")
 );
 
 
@@ -53,12 +53,12 @@ create table asset_type_tb(
 */
 create table asset_tb(
     "id" serial primary key not null,
-    "owner" varchar(32) not null default(current_user),
     "type_id" int not null references asset_type_tb(id),
+    "owner" varchar(32) not null default(current_user),
 	"process_id" int references process_tb(id),
-    "serial_number" varchar(32) unique not null,
+    "serial_number" varchar(32) unique not null default (select upper(substr(md5(random()::text), 0, 9))),
 	"common_name" varchar(32),
-    "age" float,
+    "age" float not null default 0,
     "eol" float,
     "rul" float,
     "units" varchar(32)
@@ -82,7 +82,7 @@ insert into group_tb(info) values('flight length > 5 hours');
     This is a custom component table for the N-CMAPSS dataset. 
     group_id is a proxy for flight class
 */
-create table engine_tb(
+create table engine_ncmapss_tb(
     "id" int primary key not null references asset_tb(id),
     "group_id" int not null references group_tb(id),
     "unit" int not null,
@@ -131,6 +131,27 @@ create table telemetry_tb(
 );
 -- create partitions on id, then dt
 -- select create_hypertable('telemetry_tb', 'id', 'dt');
+
+create table virtual_tb(
+    "id" int references summary_tb(id),
+    "dt" timestamptz(6) not null,
+    "T40" float not null,
+    "P30" float not null,
+    "P45" float not null,
+    "W21" float not null,
+    "W22" float not null,
+    "W25" float not null,
+    "W31" float not null,
+    "W32" float not null,
+    "W48" float not null,
+    "W50" float not null,
+    "SmFan" float not null,
+    "SmLPC" float not null,
+    "SmHPC" float not null,
+    "phi" float not null,
+    unique("id", "T40", "P30", "P45", "W21", "W22", "W25", "W31", "W32", "W48", "W50", "SmFan", "SmLPC", "SmHPC", "phi"),
+    unique("id", "dt")
+);
 
 
 create table degradation_tb(
