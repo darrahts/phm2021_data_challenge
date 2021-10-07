@@ -254,26 +254,6 @@ class DB:
 
 
 
-    # @staticmethod
-    # def _create_component(asset_type: pd.DataFrame = None,
-    #                       group_id: int = None,
-    #                       unit: int = None,
-    #                       dataset: str = None,
-    #                       db: psycopg2.extensions.connection = None,
-    #                       cur: psycopg2.extensions.cursor = None):
-    #     assert asset_type is not None and group_id is not None and unit is not None and dataset is not None, '[ERROR] must supply all parameters'
-    #     table_name = f"{asset_type.type.values[0]}_{asset_type.subtype.values[0]}_tb"
-    #     assert DB.table_exists(table_name, db), f'[ERROR] table <{table_name}> does not exist'
-    #
-    #     statement = f"""insert into {table_name}("id", "group_id", "unit", "dataset") values ({asset_type.id.values[0]}, {group_id}, {unit}, '{dataset}');"""
-    #     try:
-    #         cur.execute(statement)
-    #         db.commit()
-    #     except Exception as e:
-    #         print(e)
-
-
-
 
 
 
