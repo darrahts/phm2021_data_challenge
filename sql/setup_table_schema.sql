@@ -56,7 +56,7 @@ create table asset_tb(
     "type_id" int not null references asset_type_tb(id),
     "owner" varchar(32) not null default(current_user),
 	"process_id" int references process_tb(id),
-    "serial_number" varchar(32) unique not null default (select upper(substr(md5(random()::text), 0, 9))),
+    "serial_number" varchar(32) unique not null default upper(substr(md5(random()::text), 0, 9)),
 	"common_name" varchar(32),
     "age" float not null default 0,
     "eol" float,
@@ -98,6 +98,7 @@ create table summary_tb(
     "id" serial primary key not null,
     "asset_id" int not null references asset_tb(id),
     "cycle" int not null,
+    "hs" float not null,
     "alt" float not null,
     "Mach" float not null,
     "TRA" float not null,
@@ -156,7 +157,6 @@ create table virtual_tb(
 
 create table degradation_tb(
     "id" int references summary_tb(id),
-    "hs" float not null,
     "fan_eff_mod" float not null,
     "fan_flow_mod" float not null,
     "LPC_eff_mod" float not null,
