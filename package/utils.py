@@ -40,7 +40,7 @@ def load_h5(fnames: list = [],
             verbose: bool = False) -> tuple:
 
     df = pd.DataFrame()
-    ui = 0
+    asset_id = 1
 
     for filename in fnames:
         if verbose:
@@ -63,7 +63,7 @@ def load_h5(fnames: list = [],
                 t_labels = [l.decode('utf-8') for l in list(np.array(hdf.get('T_var')))]
 
             df_a = DataFrame(data=a_data, columns=a_labels)
-            df_a['ui'] = -1
+            df_a['asset_id'] = -1
             df_a['dataset'] = filename.split('_')[1].split('.')[0]
             df_w = DataFrame(data=w_data, columns=w_labels)
             df_x = DataFrame(data=x_data, columns=x_labels)
@@ -73,8 +73,8 @@ def load_h5(fnames: list = [],
             if verbose:
                 print(f"<{filename}> : {pd.unique(df_a.unit)}")
             for n in list(pd.unique(df_a.unit)):
-                df_a.loc[df_a['unit'] == n, 'ui'] = ui
-                ui = ui + 1
+                df_a.loc[df_a['unit'] == n, 'asset_id'] = asset_id
+                asset_id = asset_id + 1
 
             df_temp = pd.concat([df_a, df_y, df_w, df_x, df_v, df_t], axis=1)
             if verbose:
@@ -84,14 +84,20 @@ def load_h5(fnames: list = [],
             else:
                 df = pd.concat([df, df_temp], axis=0)
 
-    df_aux = df[['ui', 'Fc', 'unit', 'dataset', 'cycle']].groupby('ui').agg({'Fc': 'max',
+    df.asset_id = df.asset_id.astype(int)
+    df.unit = df.unit.astype(int)
+    df.cycle = df.cycle.astype(int)
+    df.hs = df.hs.astype(int)
+    df.Fc = df.Fc.astype(int)
+
+    df_aux = df[['asset_id', 'Fc', 'unit', 'dataset', 'cycle']].groupby('asset_id').agg({'Fc': 'max',
                                                                              'unit': 'max',
                                                                              'dataset': 'max',
                                                                              'cycle': ['min', 'max']})
     df_aux.reset_index(inplace=True)
-    df_aux.columns = ['ui', 'group_id', 'unit', 'dataset', 'age', 'eol']
+    df_aux.columns = ['asset_id', 'group_id', 'unit', 'dataset', 'age', 'eol']
     df_aux.age = df_aux.age - 1.0
-    df_aux.drop(columns=['ui'], inplace=True)
+    df_aux.drop(columns=['asset_id'], inplace=True)
 
     y_labels = t_labels
     t_labels = [w_labels, x_labels]
@@ -147,15 +153,15 @@ def interp_y(df: pd.DataFrame = None,
              csv_dir: str = '',
              save: int = 1,
              save_as: str = '') -> pd.DataFrame:
-    units = pd.unique(df.ui)
+    units = pd.unique(df.asset_id)
     for u in range(0, len(units)):
-        cycles = pd.unique(df[df.ui == u].cycle)
+        cycles = pd.unique(df[df.asset_id == u].cycle)
         for c in range(1, len(cycles)):
-            y1 = df[(df.ui == u) & (df.cycle == c)].y.values[0]
+            y1 = df[(df.asset_id == u) & (df.cycle == c)].y.values[0]
             y0 = y1 - 1
-            n = len(df[(df.ui == u) & (df.cycle == c)])
+            n = len(df[(df.asset_id == u) & (df.cycle == c)])
             yx = np.linspace(y1, y0, n)
-            df.loc[((df.ui == u) & (df.cycle == c)), 'y'] = yx
+            df.loc[((df.asset_id == u) & (df.cycle == c)), 'y'] = yx
     if save > 0:
         df.to_csv(csv_dir + save_as)
     if save == 2 or save == 0:
@@ -168,10 +174,10 @@ def train_test_split(df: pd.DataFrame = None,
                      val_pct: float = .2,
                      test_pct: float = .15,
                      verbose: bool = True) -> tuple:
-    ui = list(pd.unique(df.ui))
-    samples = len(ui)
+    asset_id = list(pd.unique(df.asset_id))
+    samples = len(asset_id)
     if verbose:
-        print(f"unit unique identifier (ui): {ui}")
+        print(f"unit unique identifier (asset_id): {asset_id}")
         print(f"number of units: {samples}")
 
     train_cnt = int(samples * train_pct)
@@ -182,23 +188,23 @@ def train_test_split(df: pd.DataFrame = None,
 
     assert train_cnt + val_cnt + test_cnt == samples, "error"
 
-    train_ui = random.sample(ui, train_cnt)
-    ui = list(set(ui) - set(train_ui))
-    val_ui = random.sample(ui, val_cnt)
-    ui = list(set(ui) - set(val_ui))
-    test_ui = random.sample(ui, test_cnt)
-    ui = list(set(ui) - set(test_ui))
+    train_asset_id = random.sample(asset_id, train_cnt)
+    asset_id = list(set(asset_id) - set(train_asset_id))
+    val_asset_id = random.sample(asset_id, val_cnt)
+    asset_id = list(set(asset_id) - set(val_asset_id))
+    test_asset_id = random.sample(asset_id, test_cnt)
+    asset_id = list(set(asset_id) - set(test_asset_id))
 
-    assert len(ui) == 0, "error"
+    assert len(asset_id) == 0, "error"
 
     if verbose:
-        print(f"train ui: {train_ui}")
-        print(f"val ui: {val_ui}")
-        print(f"test ui: {test_ui}")
+        print(f"train asset_id: {train_asset_id}")
+        print(f"val asset_id: {val_asset_id}")
+        print(f"test asset_id: {test_asset_id}")
 
-    train_df = df[df['ui'].isin(train_ui)]
-    val_df = df[df['ui'].isin(val_ui)]
-    test_df = df[df['ui'].isin(test_ui)]
+    train_df = df[df['asset_id'].isin(train_asset_id)]
+    val_df = df[df['asset_id'].isin(val_asset_id)]
+    test_df = df[df['asset_id'].isin(test_asset_id)]
 
     train_y = np.array(train_df.y, dtype=np.float32)
     val_y = np.array(val_df.y, dtype=np.float32)
@@ -312,7 +318,7 @@ def make_plot(type: str = '',
 
 def get_aws_secret(secret_name: str = "", region_name: str = "us-east-1") -> {}:
         """
-            @brief: retrieves a secret stored in AWS Secrets Manager. Requires AWS CLI and IAM user profile properly configured.
+            @brief: retrieves a secret stored in AWS Secrets Manager. Reqasset_idres AWS CLI and IAM user profile properly configured.
 
             @input:
                 secret_name: the name of the secret

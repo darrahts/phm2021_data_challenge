@@ -102,16 +102,20 @@ class DB:
 
 
     @staticmethod
-    def batch_insert(db: psycopg2.extensions.connection,
-                     tb: str,
-                     cols: list,
-                     values: list,
-                     cur: psycopg2.extensions.cursor) -> bool:
-        assert type(values[0]) == tuple, '[ERROR] values must be a list of tuples'
-        values = ','.join(cur.mogrify("(%s,%s)", x).decode('utf-8') for x in values)
-        cur.execute(f"""INSERT INTO {tb} {str(tuple(cols)).replace("'", '"')} VALUES {values};""")
-        db.commit()
-        return True
+    def batch_insert(df: pd.DataFrame = None,
+                     tb: str = '',
+                     db: psycopg2.extensions.connection = None,
+                     cur: psycopg2.extensions.cursor = None):
+        assert tb in DB.get_tables(db).values, f'[ERROR] table <{tb}> does not exist'
+        assert all(col in DB.get_fields('summary_tb', as_list=True, db=db) for col in list(df.columns)), f'[ERROR] target table <{tb}> does not contain all passed columns <{list(df.columns)}>'
+        values = list(tuple(x) for x in zip(*(df[x].values.tolist() for x in df.columns)))
+        try:
+            cur.executemany(f"""INSERT INTO {tb} {str(tuple(df.columns)).replace("'", '"')} VALUES {values};""")
+            db.commit()
+        except Exception as e:
+            print(e)
+            db.rollback()
+
 
 
 
@@ -251,6 +255,7 @@ class DB:
             db.commit()
         except Exception as e:
             print(e)
+
 
 
 
