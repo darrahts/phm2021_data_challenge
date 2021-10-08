@@ -35,7 +35,8 @@ create table process_tb(
 
 
 /*
-        description here
+        NOTE - all derived component tables (dc motor, electrochemical battery, ncmapss engine, etc) MUST
+        be defined as <type>_<subtype>_tb. This is one of many forms of data integrity enforcement
 */
 create table asset_type_tb(
     "id" serial primary key not null,
@@ -85,7 +86,7 @@ insert into group_tb(info) values('flight length > 5 hours');
 
 /*
     This is a custom component table for the N-CMAPSS dataset. 
-    group_id is a proxy for flight class
+    
 */
 create table engine_ncmapss_tb(
     "id" int primary key not null references asset_tb(id),
