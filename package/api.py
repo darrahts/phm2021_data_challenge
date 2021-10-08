@@ -3,12 +3,14 @@
 # import os
 # from botocore.exceptions import ClientError
 # import json
-import psycopg2
-import pandas as pd
 # import numpy as np
 # from datetime import datetime, timedelta
 # import sys
+import psycopg2
+import pandas as pd
+import sys
 import traceback
+import package.utils as utils
 
 
 
@@ -101,21 +103,33 @@ class DB:
 
 
 
+
     @staticmethod
     def batch_insert(df: pd.DataFrame = None,
                      tb: str = '',
+                     num_batches: int = 10,
                      db: psycopg2.extensions.connection = None,
-                     cur: psycopg2.extensions.cursor = None):
+                     cur: psycopg2.extensions.cursor = None,
+                     verbose: bool = False) -> int:
+        """
+        returns the id of the last record inserted
+        """
         assert tb in DB.get_tables(db).values, f'[ERROR] table <{tb}> does not exist'
-        assert all(col in DB.get_fields('summary_tb', as_list=True, db=db) for col in list(df.columns)), f'[ERROR] target table <{tb}> does not contain all passed columns <{list(df.columns)}>'
-        # about 100x faster than a for loop, 2x faster than using executemany() or execute_batch
-        values = str(list(tuple(x) for x in zip(*(df[x].values.tolist() for x in list(df.columns))))).replace('[', '').replace(']', '')
-        try:
-            cur.execute(f"""INSERT INTO {tb} {str(tuple(df.columns)).replace("'", '"')} VALUES {values};""")
-            db.commit()
-        except Exception as e:
-            print(e)
-            db.rollback()
+        assert all(col in DB.get_fields(f'{tb}', as_list=True, db=db) for col in list(df.columns)), f'[ERROR] target table <{tb}> does not contain all passed columns <{list(df.columns)}>'
+        # about 100x faster than a for loop, 2x faster than using executemany or execute_batch
+        # uses a generator to bypass memory issues
+        values = list(tuple(x) for x in zip(*(df[x].values.tolist() for x in list(df.columns))))
+        for i, chunk in utils.chunk_generator(values, int(len(values)/num_batches)):
+            if verbose:
+                print(f"inserting batch {i} of {num_batches}...")
+            vals = str(chunk).replace('[', '').replace(']', '')
+            try:
+                cur.execute(f"""INSERT INTO {tb} {str(tuple(df.columns)).replace("'", '"')} VALUES {vals};""")
+                db.commit()
+            except Exception as e:
+                print(e)
+                db.rollback()
+        return DB.execute(f"select max(id) from {tb};", db).values[0][0]
 
 
 
@@ -126,6 +140,9 @@ class DB:
                            description: str = None,
                            db: psycopg2.extensions.connection = None,
                            cur: psycopg2.extensions.cursor = None) -> pd.DataFrame:
+        """
+        returns the asset type as a dataframe
+        """
         assert asset_type is not None and subtype is not None, "[ERROR] must supply <asset_type>(str) and <subtype>(str)."
 
         try:
@@ -149,6 +166,9 @@ class DB:
                         type_id: int = None,
                         id_only: bool = True,
                         db: psycopg2.extensions.connection = None) -> int:
+        """
+        returns the asset type id or the asset type as dataframe
+        """
         assert type_id or (asset_type is not None and subtype is not None) is not None, "[ERROR] must supply <asset_type>(str) and <subtype>(str), or <type_id>(int)."
         try:
             if type_id is not None:
@@ -181,6 +201,11 @@ class DB:
                       db: psycopg2.extensions.connection = None,
                       cur: psycopg2.extensions.cursor = None,
                       sandbox=False):
+        """
+        flexible function to create asset based on any combination of required and optional parameters
+        owner, serial_number, and age have default db values so they can be ignored if desired
+        process_id, common_name, eol, rul, and units are not required
+        """
         assert type_id is not None and type(type_id) == int, '[ERROR] must supply <type_id>(int)'
         statement = 'insert into asset_tb("type_id"'
         values = [type_id]
@@ -225,6 +250,9 @@ class DB:
     def _get_asset(serial_number: str = None,
                    id: int = None,
                    db: psycopg2.extensions.connection = None):
+        """
+        returns the asset as a dataframe
+        """
         assert serial_number is not None or id is not None, '[ERROR] must supply <serial_number>(str) or <id>(int)'
         assert db is not None, '[ERROR] must pass <db>(psycopg2.extensions.connection)'
         if serial_number is not None:
@@ -243,6 +271,9 @@ class DB:
                           dataset: str = None,
                           db: psycopg2.extensions.connection = None,
                           cur: psycopg2.extensions.cursor = None):
+        """
+        creates a component in the db, the asset must be created first
+        """
         assert asset is not None and group_id is not None and unit is not None and dataset is not None, '[ERROR] must supply all parameters'
         asset_type = DB._get_asset_type(type_id=asset.type_id.values[0], db=db)
         assert len(asset_type) > 0, f'[ERROR] a valid asset type was not found with id <{asset.type_id.values[0]}>'

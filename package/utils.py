@@ -11,6 +11,8 @@ from botocore.exceptions import ClientError
 import json
 import os
 import string
+from collections import Mapping, Container
+from sys import getsizeof
 
 h5_dir = 'data_h5/'
 csv_dir = 'data_csv/'
@@ -364,10 +366,39 @@ def generate_serial_number(length: int = 8) -> str:
 
 
 
+def _getsizeof(obj, ids):
+    """
+    recursive function to get the true size of a python object in bytes
+    pass set() to ids on initial call, this is a recursive function
+    """
+    d = _getsizeof
+    if id(obj) in ids:
+        return 0
+
+    r = getsizeof(obj)
+    ids.add(id(obj))
+
+    if isinstance(obj, str):
+        return r
+
+    if isinstance(obj, Mapping):
+        return r + sum(d(k, ids) + d(v, ids) for k, v in obj.iteritems())
+
+    if isinstance(obj, Container):
+        return r + sum(d(x, ids) for x in obj)
+
+    return r
 
 
 
-
+def chunk_generator(X, n):
+    """
+    breaks large data into smaller equal pieces + remainder as last yield
+    """
+    j = 1
+    for i in range(0, len(X), n):
+        yield j, X[i:i+n]
+        j = j + 1
 
 
 
