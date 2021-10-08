@@ -108,9 +108,10 @@ class DB:
                      cur: psycopg2.extensions.cursor = None):
         assert tb in DB.get_tables(db).values, f'[ERROR] table <{tb}> does not exist'
         assert all(col in DB.get_fields('summary_tb', as_list=True, db=db) for col in list(df.columns)), f'[ERROR] target table <{tb}> does not contain all passed columns <{list(df.columns)}>'
-        values = list(tuple(x) for x in zip(*(df[x].values.tolist() for x in df.columns)))
+        # about 100x faster than a for loop, 2x faster than using executemany() or execute_batch
+        values = str(list(tuple(x) for x in zip(*(df[x].values.tolist() for x in list(df.columns))))).replace('[', '').replace(']', '')
         try:
-            cur.executemany(f"""INSERT INTO {tb} {str(tuple(df.columns)).replace("'", '"')} VALUES {values};""")
+            cur.execute(f"""INSERT INTO {tb} {str(tuple(df.columns)).replace("'", '"')} VALUES {values};""")
             db.commit()
         except Exception as e:
             print(e)
@@ -134,7 +135,7 @@ class DB:
                 cur.execute(f"""INSERT INTO asset_type_tb ("type", "subtype") values ('{asset_type}', '{subtype}');""")
             db.commit()
         except psycopg2.errors.UniqueViolation:
-            print("[ERROR] asset_type already exists.")
+            print("[INFO] asset_type already exists.")
         asset_type_df = DB._get_asset_type(asset_type=asset_type, subtype=subtype, id_only=False, db=db)
 
         return asset_type_df
@@ -255,7 +256,6 @@ class DB:
             db.commit()
         except Exception as e:
             print(e)
-
 
 
 
