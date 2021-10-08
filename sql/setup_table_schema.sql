@@ -1,6 +1,10 @@
 
 -- NOTE tables are not timescaledb hyptertables yet.....
 
+-- NOTE processes are not implemented with the N-CMAPSS set yet as these tables hold the process models, 
+-- and we do not have the process models for the different types of degradation
+-- im sure someone does......
+
 /*
 	fields:
 		type: refers to the process such as degradation, environment, etc
@@ -61,7 +65,8 @@ create table asset_tb(
     "age" float not null default 0,
     "eol" float,
     "rul" float,
-    "units" varchar(32)
+    "units" varchar(32),
+    unique("type_id", "owner", "process_id", "common_name", "age", "eol", "rul", "units")
 );
 
 
@@ -115,7 +120,7 @@ create table telemetry_tb(
     "dt" timestamptz(6) not null,
     "Wf" float not null,
     "Nf" float not null,
-    "Ne" float not null,
+    "Nc" float not null,
     "T24" float not null,
     "T30" float not null,
     "T48" float not null,
@@ -127,7 +132,7 @@ create table telemetry_tb(
     "Ps30" float not null,
     "P40" float not null,
     "P50" float not null,
-    unique("id", "Wf", "Nf", "Ne", "T24", "T30", "T48", "T50", "P15", "P2", "P21", "P24", "Ps30", "P40", "P50"),
+    unique("id", "Wf", "Nf", "Nc", "T24", "T30", "T48", "T50", "P15", "P2", "P21", "P24", "Ps30", "P40", "P50"),
     unique("id", "dt")
 );
 -- create partitions on id, then dt
