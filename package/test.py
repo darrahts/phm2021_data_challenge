@@ -28,4 +28,6 @@ for filename in fnames:
     print(filename)
     for _set in sets:
         print(_set)
-        print(os.path.join(base_dir, h5_dir, filename)
+        print(os.path.join(base_dir, h5_dir, filename))
+
+sys.exit(0)
