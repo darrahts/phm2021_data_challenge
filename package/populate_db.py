@@ -3,11 +3,12 @@ import sys
 import h5py
 import numpy as np
 import pandas as pd
-base_dir = os.path.dirname(os.getcwd())
+base_dir = os.getcwd()
 print(base_dir)
 sys.path.insert(1, base_dir)
-from package.api import DB as api
-import package.utils as utils
+
+from api import DB as api
+import utils as utils
 
 
 
@@ -19,11 +20,18 @@ import package.utils as utils
     
     params = {'datasource.username': 'user1', 
               'datasource.password': 'mypassword', 
-              'datasource.database': 'ncmapss_db', <- NO CHANGE 
-              'datasource.url': '192.168.1.123', <- or a domain name
-              'datasource.port': '5432'} <- most likely keep the same
+              'datasource.database': 'ncmapss_db', # <- NO CHANGE 
+              'datasource.url': '192.168.1.123', # <- or a domain name
+              'datasource.port': '5432'} # <- most likely keep the same
 """
-params = utils.get_aws_secret("/secret/ncmapssdb")
+
+params = {'datasource.username': 'darrahts', 
+            'datasource.password': 'Darrah16', 
+            'datasource.database': 'ncmapss_db', # <- NO CHANGE 
+            'datasource.url': 'localhost', # <- or a domain name
+            'datasource.port': '5432'} # <- most likely keep the same
+
+#params = utils.get_aws_secret("/secret/ncmapssdb")
 db, cur =  api.connect(params)
 db.set_session(autocommit=True)
 del params
