@@ -10,8 +10,10 @@ import psycopg2
 import pandas as pd
 import sys
 import traceback
-import package.utils as utils
-
+try:
+    import package.utils as utils
+except:
+    import utils
 
 
 class DB:
