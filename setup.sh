@@ -11,7 +11,7 @@
 #                    creates ncmapss_db and the current user
 #                4. setup the table schema and enable timescaledb extension
 #                    executes table_schema.sql
-#
+#                5. execute package/populate_db.py to insert the h5 data into the db
 #            Tim Darrah
 #            NASA Fellow
 #            PhD Student
