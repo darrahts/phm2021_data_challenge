@@ -42,7 +42,7 @@ def load_h5(fnames: list = [],
             verbose: bool = False) -> tuple:
     """
     basically the same code provided in the template but saves data to files
-    prefer to use the function insert_h5, which is uses the database
+    prefer to use the file populate_db, which is uses the database
     """
     df = pd.DataFrame()
     asset_id = 1
