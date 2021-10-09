@@ -40,7 +40,10 @@ def load_h5(fnames: list = [],
             save: int = 1,  # 0 = dont save, 1 = save, 2 = save and return
             save_as: str = '',
             verbose: bool = False) -> tuple:
-
+    """
+    basically the same code provided in the template but saves data to files
+    prefer to use the function insert_h5, which is uses the database
+    """
     df = pd.DataFrame()
     asset_id = 1
 
@@ -399,7 +402,6 @@ def chunk_generator(X, n):
     for i in range(0, len(X), n):
         yield j, X[i:i+n]
         j = j + 1
-
 
 
 
