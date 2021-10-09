@@ -79,10 +79,22 @@ if [[ $ans = y ]]
 then
     psql -d ncmapss_db -f sql/setup_readonly_guest.sql
 fi
-
+unset ans
 
 echo 'restarting postgresql service...'
 sudo service postgresql restart
 echo 'service restarted...'
 echo 'configuration complete.'
 echo ' '
+
+read -p "populate db with h5 data (ensure the data files are unzipped in data_h5/ directory) ? (y/n): " ans
+if [[ $ans = y ]]
+then
+    echo 'this will take some time.........'
+    python package/populate_db.py
+    echo '****************************************'
+    echo '****************************************'
+    echo '****************************************'
+    echo 'data upload complete.'
+fi
+
