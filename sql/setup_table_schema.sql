@@ -79,9 +79,13 @@ create table group_tb(
 	info varchar(256) unique not null
 );
 
-insert into group_tb(info) values('flight length 1 - 3 hours');
-insert into group_tb(info) values('flight length 3 - 5 hours');
-insert into group_tb(info) values('flight length > 5 hours');
+insert into group_tb(info) values ('dev');
+insert into group_tb(info) values ('test');
+insert into group_tb(info) values ('val');
+
+-- insert into group_tb(info) values('flight length 1 - 3 hours');
+-- insert into group_tb(info) values('flight length 3 - 5 hours');
+-- insert into group_tb(info) values('flight length > 5 hours');
 
 
 /*
@@ -91,6 +95,7 @@ insert into group_tb(info) values('flight length > 5 hours');
 create table engine_ncmapss_tb(
     "id" int primary key not null references asset_tb(id),
     "group_id" int not null references group_tb(id),
+    "Fc" int not null,
     "unit" int not null,
     "dataset" varchar(32) not null,
     unique(id, group_id, unit, dataset)
