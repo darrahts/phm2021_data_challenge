@@ -98,6 +98,7 @@ create table engine_ncmapss_tb(
     "Fc" int not null,
     "unit" int not null,
     "dataset" varchar(32) not null,
+    constraint flight_class check ("Fc" = 1 or "Fc" = 2 or "Fc" = 3),
     unique(id, group_id, unit, dataset)
 );
 
