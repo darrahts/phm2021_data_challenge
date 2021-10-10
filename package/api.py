@@ -269,6 +269,7 @@ class DB:
     @staticmethod
     def _create_component(asset: pd.DataFrame = None,
                           group_id: int = None,
+                          Fc: int = None,
                           unit: int = None,
                           dataset: str = None,
                           db: psycopg2.extensions.connection = None,
@@ -276,14 +277,14 @@ class DB:
         """
         creates a component in the db, the asset must be created first
         """
-        assert asset is not None and group_id is not None and unit is not None and dataset is not None, '[ERROR] must supply all parameters'
+        assert asset is not None and group_id is not None and Fc is not None and unit is not None and dataset is not None, '[ERROR] must supply all parameters'
         asset_type = DB._get_asset_type(type_id=asset.type_id.values[0], db=db)
         assert len(asset_type) > 0, f'[ERROR] a valid asset type was not found with id <{asset.type_id.values[0]}>'
 
         table_name = f"{asset_type.type.values[0]}_{asset_type.subtype.values[0]}_tb"
         assert DB.table_exists(table_name, db), f'[ERROR] table <{table_name}> does not exist'
 
-        statement = f"""insert into {table_name}("id", "group_id", "unit", "dataset") values ({asset.id.values[0]}, {group_id}, {unit}, '{dataset}');"""
+        statement = f"""insert into {table_name}("id", "group_id", "Fc", "unit", "dataset") values ({asset.id.values[0]}, {group_id}, {Fc}, {unit}, '{dataset}');"""
         try:
             cur.execute(statement)
             db.commit()
@@ -294,8 +295,10 @@ class DB:
 
 
 
-
-
+    #
+    # @staticmethod
+    # def _get_units(by: str = 'Fc',
+    #                db: psycopg2.extensions.connection = None) -> pd.DataFrame:
 
 
 
