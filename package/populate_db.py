@@ -64,6 +64,14 @@ for filename in fnames:
     print(filename)
     for _set in sets:
         print(_set)
+        group_id = -1
+        if _set == 'dev':
+            group_id = 1
+        elif _set == 'test':
+            group_id = 2
+        elif _set == 'val':
+            group_id = 3
+
         with h5py.File(os.path.join(base_dir, h5_dir, filename), 'r') as hdf:
             a_data = np.array(hdf.get(f"A_{_set}"))
             w_data = np.array(hdf.get(f"W_{_set}"))
@@ -81,6 +89,7 @@ for filename in fnames:
         df_a = pd.DataFrame(data=a_data, columns=a_labels)
         df_a['asset_id'] = -1
         df_a['dataset'] = filename.split('_')[1].split('.')[0]
+        df_a['group_id'] = group_id
         df_w = pd.DataFrame(data=w_data, columns=w_labels)
         df_x = pd.DataFrame(data=x_data, columns=x_labels)
         df_v = pd.DataFrame(data=v_data, columns=v_labels)
@@ -107,12 +116,14 @@ for filename in fnames:
     df.hs = df.hs.astype(int)
     df.Fc = df.Fc.astype(int)
 
-    df_aux = df[['asset_id', 'Fc', 'unit', 'dataset', 'cycle']].groupby('asset_id').agg({'Fc': 'max',
-                                                                                         'unit': 'max',
-                                                                                         'dataset': 'max',
-                                                                                         'cycle': ['min', 'max']})
+    df_aux = df[['asset_id', 'group_id', 'Fc', 'unit', 'dataset', 'cycle']].groupby('asset_id').agg({'group_id': 'max',
+                                                                                                     'Fc': 'max',
+                                                                                                     'unit': 'max',
+                                                                                                     'dataset': 'max',
+                                                                                                     'cycle': ['min',
+                                                                                                               'max']})
     df_aux.reset_index(inplace=True)
-    df_aux.columns = ['asset_id', 'group_id', 'unit', 'dataset', 'age', 'eol']
+    df_aux.columns = ['asset_id', 'group_id', 'Fc', 'unit', 'dataset', 'age', 'eol']
     df_aux.age = df_aux.age - 1.0
 
     serial_numbers = [utils.generate_serial_number(length=8) for _ in range(len(df_aux))]
@@ -132,6 +143,7 @@ for filename in fnames:
 
         component = api._create_component(asset=asset,
                                           group_id=df_aux.iloc[i].group_id,
+                                          Fc=df_aux.iloc[i].Fc,
                                           unit=df_aux.iloc[i].unit,
                                           dataset=df_aux.iloc[i].dataset,
                                           db=db,
