@@ -295,15 +295,105 @@ class DB:
 
 
 
-    #
-    # @staticmethod
-    # def _get_units(by: str = 'Fc',
-    #                db: psycopg2.extensions.connection = None) -> pd.DataFrame:
 
 
+    @staticmethod
+    def _get_units(group_id: [] = None,
+                   Fc: [] = None,
+                   datasets: [] = None,
+                   order_by: str = 'id',
+                   db: psycopg2.extensions.connection = None):
+        valid_datasets = [
+                'DS01-005',
+                'DS03-012',
+                'DS04',
+                'DS05',
+                'DS06',
+                'DS07',
+                'DS08a-009',
+                'DS08c-008'
+            ]
+        valid_order_by = [
+            'id',
+            'age',
+            'rul'
+        ]
+        statement = """select ast."id", 
+        ast."serial_number", 
+        ast."age", 
+        ast."eol",  
+        ast."rul", 
+        ent."group_id", 
+        ent."Fc", 
+        ent."unit", 
+        ent."dataset" 
+        from asset_tb ast 
+        join engine_ncmapss_tb ent 
+        on ast.id = ent.id """
+        assert isinstance(group_id, list) or isinstance(group_id, type(None)), '[ERROR] pass arguments as lists'
+        assert isinstance(Fc, list) or isinstance(Fc, type(None)), '[ERROR] pass arguments as lists'
+        assert isinstance(datasets, list) or isinstance(datasets, type(None)), '[ERROR] pass dataset as a list'
+        assert order_by in valid_order_by, f'[ERROR] <order_by> bust be in {valid_order_by}'
 
+        if group_id is not None:
+            if len(group_id) > 1:
+                group_id = tuple(group_id)
+            elif len(group_id) == 1:
+                group_id = f'({group_id[0]})'
 
+        if Fc is not None:
+            if len(Fc) > 1:
+                Fc = tuple(Fc)
+            elif len(Fc) == 1:
+                Fc = f'({Fc[0]})'
 
+        if datasets is not None:
+            if len(datasets) > 1:
+                datasets = tuple(datasets)
+            elif len(datasets) == 1:
+                datasets = f"('{datasets[0]}')"
+
+        clause = ''
+        if group_id is not None:
+            clause = f'where ent."group_id" in {group_id} '
+
+        if Fc is not None:
+            if group_id is not None:
+                clause = clause + f'and ent."Fc" in {Fc} '
+            else:
+                clause = f'where ent."Fc" in {Fc} '
+
+        if datasets is not None:
+            if isinstance(datasets, tuple):
+                for ds in datasets:
+                    assert (any(ds in sub for sub in valid_datasets)), f'[ERROR] valid dataset was not supplied. valid datasets are {valid_datasets}'
+            elif isinstance(datasets, str):
+                assert eval(datasets) in valid_datasets, f'[ERROR] valid dataset was not supplied. valid datasets are {valid_datasets}'
+            if group_id is not None or Fc is not None:
+                clause = clause + f'and ent."dataset" in {datasets} '
+            else:
+                clause = f'where ent."dataset" in {datasets} '
+
+        statement = statement + clause
+        statement = statement + f'order by ast."{order_by}" asc;'
+
+        return DB.execute(statement, db)
+
+    @staticmethod
+    def _get_summary_data():
+        pass
+
+    @staticmethod
+    def _get_telemetry_data():
+        pass
+
+    @staticmethod
+    def _get_degradation_data():
+        pass
+
+    @staticmethod
+    def _get_all_data():
+        pass
 
 
 
