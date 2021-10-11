@@ -27,7 +27,3 @@ otherwise besides the typical pandas/numpy stack and other packages that are pro
 psycopg2
 h5py
 ```
-
-
-### Thoughts  
-- use the `group_tb` to hold whether the unit came from dev, test, or validation set instead of the flight class? probably..
