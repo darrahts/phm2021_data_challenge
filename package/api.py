@@ -248,6 +248,7 @@ class DB:
             return DB._get_asset(serial_number=serial_number, db=db)
 
 
+
     @staticmethod
     def _get_asset(serial_number: str = None,
                    id: int = None,
@@ -262,7 +263,6 @@ class DB:
         else:
             statement = f"""select * from asset_tb where "id" = {id};"""
         return DB.execute(statement, db)
-
 
 
 
@@ -290,10 +290,6 @@ class DB:
             db.commit()
         except Exception as e:
             print(e)
-
-
-
-
 
 
 
@@ -379,17 +375,56 @@ class DB:
 
         return DB.execute(statement, db)
 
+
+
+
     @staticmethod
-    def _get_summary_data():
-        pass
+    def _get_unit_counts(group_by: str = 'both',
+                         db: psycopg2.extensions.connection = None) -> pd.DataFrame:
+        valid_group_by = ['group_id', 'dataset', 'both']
+        assert group_by in valid_group_by, f'[ERROR], <group_by> must be in {valid_group_by}'
+        if group_by == 'both':
+            statement = """select count(*), group_id, dataset from engine_ncmapss_tb group by dataset, group_id order by dataset, group_id;"""
+        elif group_by == 'group_id':
+            statement = """select count(*), group_id from engine_ncmapss_tb group by group_id order by group_id;"""
+        else:
+            statement = """select count(*), dataset from engine_ncmapss_tb group by dataset order by dataset;"""
+        return DB.execute(statement, db)
+
+
+
+
+    @staticmethod
+    def _get_summary_data(units: [] = None,
+                          db: psycopg2.extensions.connection = None) -> pd.DataFrame:
+        valid_units = DB.execute("select id from asset_tb;", db).values
+        assert units is None or all(unit in valid_units for unit in units), '[ERROR], either do not pass a value for <units> or ensure all values passed are valid'
+        if units is None:
+            choice = input("It is highly recommended to pass a list of units as selecting all units will take a few minutes (this query has not been optimized). proceed? (y/n): ")
+            if choice == 'y' or choice == 'Y':
+                statement = """select st.* from summary_tb st;"""
+            else:
+                return pd.DataFrame()
+        else:
+            statement = f"""select st.* from summary_tb st where asset_id in {tuple(units)};"""
+        return DB.execute(statement, db)
+
+
+
 
     @staticmethod
     def _get_telemetry_data():
         pass
 
+
+
+
     @staticmethod
     def _get_degradation_data():
         pass
+
+
+
 
     @staticmethod
     def _get_all_data():
