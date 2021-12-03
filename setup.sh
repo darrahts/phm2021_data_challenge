@@ -36,7 +36,7 @@ then
 
     # # Install the latest version of PostgreSQL.
     # # If you want a specific version, use 'postgresql-12' or similar instead of 'postgresql':
-    sudo apt-get -y install postgresql
+    sudo apt-get -y install postgresql postgresql-contrib
 fi
 unset ans
 
