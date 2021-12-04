@@ -4,7 +4,7 @@ WORK IN PROGRESS - much of the code in [/package](https://github.com/darrahts/ph
 
 database implementation for the N-CMAPSS dataset that uses the same schema as the [uav project](https://github.com/darrahts/uavTestbed) (with some improvements and minor differences) with a python api. 
 
-Check out [jupyter notebook](https://github.com/darrahts/phm2021_data_challenge/blob/main/notebooks/database_api_ncmapss.ipynb) for some api examples of how to use the api for data insertion and extraction).
+Check out [jupyter notebook](https://github.com/darrahts/phm2021_data_challenge/blob/main/notebooks/database_api_ncmapss.ipynb) for some api examples of how to use the api for data insertion and extraction.
 
 ## Steps  
 1. clone the repository  `git clone https://github.com/darrahts/phm2021_data_challenge.git`  
