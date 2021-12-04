@@ -60,7 +60,14 @@ def cnn(lookback, n_features, n_out):
 
 def lstm(lookback: int = 5,
          n_features: int = None,
-         n_out: int = 1) -> keras.Model:
+         n_out: int = 1,
+         return_layers: int = 2,
+         units: int = 64,
+         dropout: float = .25,
+         rec_dropout: float = .25,
+         l1_reg: float = .01,
+         l2_reg: float = .01,
+         l1l2_reg: float = .01) -> keras.Model:
     assert n_features is not None, '[ERROR] must supply n_features (int)'
 
     inputs = keras.Input(shape=(lookback, n_features), name='in1')
