@@ -124,6 +124,7 @@ create table summary_tb(
 */
 create table telemetry_tb(
     "id" int references summary_tb(id),
+    "asset_id" int not null references asset_tb(id),
     "dt" timestamptz(6) not null,
     "Wf" float not null,
     "Nf" float not null,
@@ -147,6 +148,7 @@ create table telemetry_tb(
 
 create table virtual_tb(
     "id" int references summary_tb(id),
+    "asset_id" int not null references asset_tb(id),
     "dt" timestamptz(6) not null,
     "T40" float not null,
     "P30" float not null,
@@ -169,6 +171,7 @@ create table virtual_tb(
 
 create table degradation_tb(
     "id" int references summary_tb(id),
+    "asset_id" int not null references asset_tb(id),
     "fan_eff_mod" float not null,
     "fan_flow_mod" float not null,
     "LPC_eff_mod" float not null,
