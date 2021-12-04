@@ -395,40 +395,25 @@ class DB:
 
 
     @staticmethod
-    def _get_summary_data(units: [] = None,
-                          db: psycopg2.extensions.connection = None) -> pd.DataFrame:
+    def _get_data(units: [] = None,
+                  downsample: int = 5,
+                  table: str = 'summary_tb',
+                  drop_cols: [] = None,
+                  db: psycopg2.extensions.connection = None) -> pd.DataFrame:
         valid_units = DB.execute("select id from asset_tb;", db).values
         assert units is None or all(unit in valid_units for unit in units), '[ERROR], either do not pass a value for <units> or ensure all values passed are valid'
-        if units is None:
-            choice = input("It is highly recommended to pass a list of units as selecting all units will take a few minutes (this query has not been optimized). proceed? (y/n): ")
+        if units is None and downsample < 2:
+            choice = input("It is highly recommended to pass a list of units and/or downsampling factor greater than 2 as selecting all units will take a few minutes (this query has not been optimized). proceed? (y/n): ")
             if choice == 'y' or choice == 'Y':
-                statement = """select st.* from summary_tb st;"""
+                statement = f"""select tb.* from {table} tb;"""
             else:
                 return pd.DataFrame()
         else:
-            statement = f"""select st.* from summary_tb st where asset_id in {tuple(units)};"""
-        return DB.execute(statement, db)
-
-
-
-
-    @staticmethod
-    def _get_telemetry_data():
-        pass
-
-
-
-
-    @staticmethod
-    def _get_degradation_data():
-        pass
-
-
-
-
-    @staticmethod
-    def _get_all_data():
-        pass
+            statement = f"""select tb.* from (select *, row_number() over() rn from {table}) tb where asset_id in {tuple(units)} and tb.rn % {downsample} = 0;"""
+        if drop_cols is None:
+            return DB.execute(statement, db).drop(columns=['rn'])
+        else:
+            return DB.execute(statement, db).drop(columns=drop_cols)
 
 
 
