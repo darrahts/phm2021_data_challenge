@@ -1,6 +1,6 @@
 # phm2021_data_challenge
 
-WORK IN PROGRESS
+WORK IN PROGRESS - much of the code in [/package](https://github.com/darrahts/phm2021_data_challenge/tree/main/package) is getting refactored
 
 database implementation for the N-CMAPSS dataset that uses the same schema as the [uav project](https://github.com/darrahts/uavTestbed) (with some improvements and minor differences) with a python api. 
 
@@ -21,7 +21,7 @@ Check out [jupyter notebook](https://github.com/darrahts/phm2021_data_challenge/
 8. open [database_api_ncmapss.ipynb](https://github.com/darrahts/phm2021_data_challenge/blob/main/notebooks/database_api_ncmapss.ipynb) and if in step 4 you selected the option to populate the database, skip steps 1-9
 
 
-### NOTE
+### NOTES
 
 if you are using aws secrets you want
 ```
