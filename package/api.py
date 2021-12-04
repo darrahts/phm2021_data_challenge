@@ -402,7 +402,7 @@ class DB:
                   db: psycopg2.extensions.connection = None) -> pd.DataFrame:
         valid_units = DB.execute("select id from asset_tb;", db).values
         assert units is None or all(unit in valid_units for unit in units), '[ERROR], either do not pass a value for <units> or ensure all values passed are valid'
-        if units is None and downsample < 2:
+        if units is None or downsample < 2:
             choice = input("It is highly recommended to pass a list of units and/or downsampling factor greater than 2 as selecting all units will take a few minutes (this query has not been optimized). proceed? (y/n): ")
             if choice == 'y' or choice == 'Y':
                 statement = f"""select tb.* from {table} tb;"""
