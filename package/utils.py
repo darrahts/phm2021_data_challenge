@@ -174,11 +174,14 @@ def interp_y(df: pd.DataFrame = None,
 
 
 
-def train_test_split(df: pd.DataFrame = None,
+def train_test_split_old(df: pd.DataFrame = None,
                      train_pct: float = .65,
                      val_pct: float = .2,
                      test_pct: float = .15,
                      verbose: bool = True) -> tuple:
+    """
+    DEPRACATED, TO BE REMOVED
+    """
     asset_id = list(pd.unique(df.asset_id))
     samples = len(asset_id)
     if verbose:
@@ -217,6 +220,53 @@ def train_test_split(df: pd.DataFrame = None,
 
     return train_df, train_y, val_df, val_y, test_df, test_y
 
+
+def train_test_split(df: pd.DataFrame = None,
+                     y_labels: [] = None,
+                     t_labels: [] = None,
+                     train_pct: float = .75,
+                     val_pct: float = .10,
+                     test_pct: float = .15,
+                     verbose: bool = False):
+    units = list(pd.unique(df.asset_id))
+    num_units = len(units)
+    train_cnt = int(num_units * train_pct)
+    val_cnt = int(num_units * val_pct)
+    test_cnt = int(num_units * test_pct) + 1
+    if verbose:
+        print(f"train, val, test set counts: {train_cnt}, {val_cnt}, {test_cnt}")
+
+    assert train_cnt + val_cnt + test_cnt == num_units, "error1"
+
+    train_units = random.sample(units, train_cnt)
+    units = list(set(units) - set(train_units))
+
+    val_units = random.sample(units, val_cnt)
+    units = list(set(units) - set(val_units))
+
+    test_units = random.sample(units, test_cnt)
+    units = list(set(units) - set(test_units))
+
+    assert len(units) == 0, "error2"
+
+    if verbose:
+        print(f"train units: {train_units}")
+        print(f"val units: {val_units}")
+        print(f"test units: {test_units}")
+
+    train_df = df[df['asset_id'].isin(train_units)]
+    val_df = df[df['asset_id'].isin(val_units)]
+    test_df = df[df['asset_id'].isin(test_units)]
+
+    train_y = np.array(train_df[y_labels], dtype=np.float32)
+    val_y = np.array(val_df[y_labels], dtype=np.float32)
+    test_y = np.array(test_df[y_labels], dtype=np.float32)
+
+    train_df = train_df[t_labels]
+    val_df = val_df[t_labels]
+    test_df = test_df[t_labels]
+
+    return train_df, train_y, val_df, val_y, test_df, test_y
 
 
 def temporalize_data(inputs, outputs, lookback, horizon, n_features, n_out):
@@ -406,6 +456,14 @@ def chunk_generator(X, n):
 
 
 
+def plot_loss(history):
+    plt.plot(history.history['loss'], label='loss')
+    plt.plot(history.history['val_loss'], label='val_loss')
+    plt.ylim([0, 10])
+    plt.xlabel('Epoch')
+    plt.ylabel('Error [MPG]')
+    plt.legend()
+    plt.grid(True)
 
 
 
