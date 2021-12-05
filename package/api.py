@@ -344,7 +344,9 @@ class DB:
                 Fc = f'({Fc[0]})'
 
         if datasets is not None:
-            if len(datasets) > 1:
+            if datasets[0] == 'all':
+                datasets = tuple(valid_datasets)
+            elif len(datasets) > 1:
                 datasets = tuple(datasets)
             elif len(datasets) == 1:
                 datasets = f"('{datasets[0]}')"

@@ -25,7 +25,7 @@ import utils as utils
               'datasource.port': '5432'} # <- most likely keep the same
 """
 
-params = {'datasource.username': 'oem', 
+params = {'datasource.username': 'oem',
             'datasource.password': 'Darrah16', # (my dummy password for public stuff)
             'datasource.database': 'ncmapss_db', # <- NO CHANGE 
             'datasource.url': 'localhost', # <- or a domain name
