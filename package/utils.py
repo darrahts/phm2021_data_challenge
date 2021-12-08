@@ -5,6 +5,7 @@ from pandas import DataFrame
 import random
 import tensorflow as tf
 import matplotlib.pyplot as plt
+import seaborn as sns
 import boto3
 import base64
 from botocore.exceptions import ClientError
@@ -13,6 +14,8 @@ import os
 import string
 from collections import Mapping, Container
 from sys import getsizeof
+from sklearn.preprocessing import MinMaxScaler
+
 
 h5_dir = 'data_h5/'
 csv_dir = 'data_csv/'
@@ -27,8 +30,9 @@ def check_gpu():
     gpu = tf.config.list_physical_devices('GPU')
     has_gpu = gpu[0][0].split(':')[1] == 'GPU'
     print(f"[INFO] GPU?: <{has_gpu}> {gpu}")
-    if(has_gpu):
-        tf.config.experimental.set_memory_growth(gpu[0], True)
+    if (has_gpu):
+        for i in range(len(gpu)):
+            tf.config.experimental.set_memory_growth(gpu[i], True)
     return has_gpu
 
 
@@ -464,6 +468,35 @@ def plot_loss(history):
     plt.ylabel('Error [MPG]')
     plt.legend()
     plt.grid(True)
+
+
+def plot_feature_distributions(df: pd.DataFrame = None,
+                               feature_range: tuple = (-1,1),
+                               figsize: tuple = (12,4)) -> None:
+    scaler = MinMaxScaler(feature_range=feature_range)
+    _df = df.copy()
+    _df = pd.DataFrame(data=scaler.fit_transform(_df), columns=df.columns)
+    _df.head()
+
+    _plt = _df.melt(var_name='Feature', value_name='Normalized')
+    plt.figure(figsize=(figsize))
+    ax = sns.violinplot(x='Feature', y='Normalized', data=_plt)
+    _ = ax.set_xticklabels(_df.keys(), rotation=45)
+    plt.title("Normalized Feature Distribution")
+    plt.show()
+
+
+# def plot_joint_distributions(df: pd.DataFrame = None,
+#                              )
+
+
+
+
+
+
+
+
+
 
 
 
