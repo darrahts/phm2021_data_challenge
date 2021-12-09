@@ -16,7 +16,7 @@ from collections import Mapping, Container
 from sys import getsizeof
 from sklearn.preprocessing import MinMaxScaler
 from xgboost import XGBRegressor
-
+from sklearn.inspection import permutation_importance
 
 h5_dir = 'data_h5/'
 csv_dir = 'data_csv/'
@@ -492,19 +492,57 @@ def plot_feature_importance(features: np.ndarray = None,
                             target: np.ndarray = None,
                             target_label: [] = None,
                             figsize: tuple = (9,4)) -> None:
-    importance_model = XGBRegressor()
-    importance_model.fit(features, target)
-    importance = importance_model.feature_importances_
+        importance_model = XGBRegressor()
+        importance_model.fit(features, target)
+        importance = importance_model.feature_importances_
 
-    fig = plt.figure(figsize=(9, 4))
-    ax = fig.add_subplot(111)
-    plt.bar([x for x in range(len(importance))], importance)
-    if feature_labels is not None:
-        ax.set_xticks([x for x in range(len(feature_labels))])
-        ax.set_xticklabels(feature_labels, rotation=45)
-    plt.title(f'Feature importance for target <{target_label}>')
-    plt.show()
+        fig = plt.figure(figsize=figsize)
+        ax = fig.add_subplot(111)
+        plt.bar([x for x in range(len(importance))], importance)
+        if feature_labels is not None:
+            ax.set_xticks([x for x in range(len(feature_labels))])
+            ax.set_xticklabels(feature_labels, rotation=45)
+        plt.title(f'Feature importance for target <{target_label}>')
+        plt.show()
 
+def plot_feature_importances(model: object = None,
+                            features: np.ndarray = None,
+                            feature_labels: [] = None,
+                            target: np.ndarray = None,
+                            target_label: [] = None) -> None:
+
+        scoring = ['explained_variance',
+                   'max_error',
+                   'neg_mean_absolute_error',
+                   'neg_root_mean_squared_error',
+                   'r2']
+
+        results = permutation_importance(estimator=model,
+                                         X=features,
+                                         y=target,
+                                         scoring=scoring)
+
+        importances = [results[x].importances_mean for x in scoring]
+
+        height = 3 * len(scoring)
+
+        fig = plt.figure(figsize=(9, height))
+        plt.title(f'Feature importance for target <{target_label}>')
+
+        for i in range(0, len(scoring) - 1):
+            ax = fig.add_subplot(len(scoring), 1, i + 1)
+            plt.bar([x for x in range(len(importances[i]))], importances[i])
+            plt.ylabel(scoring[i])
+            ax.set_xticks([])
+
+        ax = fig.add_subplot(len(scoring), 1, i + 2)
+        plt.bar([x for x in range(len(importances[i + 1]))], importances[i + 1])
+        if feature_labels is not None:
+            ax.set_xticks([x for x in range(len(feature_labels))])
+            ax.set_xticklabels(feature_labels, rotation=45)
+            plt.ylabel(scoring[i + 1])
+
+        plt.show()
 
 
 
