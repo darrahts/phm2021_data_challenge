@@ -15,6 +15,7 @@ import string
 from collections import Mapping, Container
 from sys import getsizeof
 from sklearn.preprocessing import MinMaxScaler
+from xgboost import XGBRegressor
 
 
 h5_dir = 'data_h5/'
@@ -486,11 +487,23 @@ def plot_feature_distributions(df: pd.DataFrame = None,
     plt.show()
 
 
-# def plot_joint_distributions(df: pd.DataFrame = None,
-#                              )
+def plot_feature_importance(features: np.ndarray = None,
+                            feature_labels: [] = None,
+                            target: np.ndarray = None,
+                            target_label: [] = None,
+                            figsize: tuple = (9,4)) -> None:
+    importance_model = XGBRegressor()
+    importance_model.fit(features, target)
+    importance = importance_model.feature_importances_
 
-
-
+    fig = plt.figure(figsize=(9, 4))
+    ax = fig.add_subplot(111)
+    plt.bar([x for x in range(len(importance))], importance)
+    if feature_labels is not None:
+        ax.set_xticks([x for x in range(len(feature_labels))])
+        ax.set_xticklabels(feature_labels, rotation=45)
+    plt.title(f'Feature importance for target <{target_label}>')
+    plt.show()
 
 
 
