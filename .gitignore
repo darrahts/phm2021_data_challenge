@@ -138,3 +138,12 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+
+# depreciated files
+
+notebooks/N-CMAPSS_Example_data_loading_and_exploration.ipynb
+notebooks/degradation_model_development.ipynb
+notebooks/task1_rul_regressor_current.ipynb
+notebooks/task1_rul_regressor_monday.ipynb
+notebooks/train_all_models.ipynb 
