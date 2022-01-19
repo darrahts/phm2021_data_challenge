@@ -509,13 +509,8 @@ def plot_feature_importances(model: object = None,
                             features: np.ndarray = None,
                             feature_labels: [] = None,
                             target: np.ndarray = None,
-                            target_label: [] = None) -> None:
-
-        scoring = ['explained_variance',
-                   'max_error',
-                   'neg_mean_absolute_error',
-                   'neg_root_mean_squared_error',
-                   'r2']
+                            target_label: [] = None,
+                            scoring: [] = None) -> None:
 
         results = permutation_importance(estimator=model,
                                          X=features,
