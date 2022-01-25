@@ -41,19 +41,6 @@ def train(X_train: np.array = None,
                   optimizer=keras.optimizers.Adam(lr=lr),
                   metrics=[keras.metrics.RootMeanSquaredError()])
 
-    with open(directory + 'model_summary.txt', 'w') as f:
-        model.summary(print_fn=lambda x: f.write(x + '\n'))
-
-    if not os.path.exists(save_dir):
-        os.makedirs(save_dir)
-    if verbose:
-        print(f"[INFO] saving <{input_name}> model to <{directory+input_name}>")
-    if 'lstm' in directory:
-        # with open(directory+input_name+'_model/'+input_name+'.pkl', 'wb') as f:
-        #     pickle.dump(model, f)
-        model.save(save_dir+input_name+'_.h5')
-    else:
-        model.save(save_dir)
     if X_val is not None and y_val is not None:
         if early_stop == False:
             history = model.fit(X_train, y_train,
@@ -77,6 +64,22 @@ def train(X_train: np.array = None,
                             epochs=epochs,
                             callbacks=[early_stopping])
 
+    with open(directory + 'model_summary.txt', 'w') as f:
+        model.summary(print_fn=lambda x: f.write(x + '\n'))
+
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
+    if verbose:
+        print(f"[INFO] saving <{input_name}> model to <{directory + input_name}>")
+    if 'lstm' in directory:
+        # with open(directory+input_name+'_model/'+input_name+'.pkl', 'wb') as f:
+        #     pickle.dump(model, f)
+        model.save(save_dir + input_name + '_.h5')
+    else:
+        model.save(save_dir)
+
+
+
     utils.make_plot(type='loss_plot',
                     save_fig=1,
                     X_val=X_val,
@@ -99,8 +102,7 @@ def train(X_train: np.array = None,
     else:
         X_test = X_train
         y_test = y_train
-
-    evaluation = model.evaluate(X_test, y_test, batch_size=batch_size, verbose=1)
+        evaluation = model.evaluate(X_test, y_test, batch_size=batch_size, verbose=1)
 
     y_pred = model.predict(X_test)
 
