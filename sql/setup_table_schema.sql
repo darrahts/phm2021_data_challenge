@@ -120,12 +120,11 @@ create table summary_tb(
 
 
 /*
-    measurements, dt is not unique because multiple units could (and will) have the same dt
+    measurements
 */
 create table telemetry_tb(
     "id" int references summary_tb(id),
     "asset_id" int not null references asset_tb(id),
-    "dt" timestamptz(6) not null,
     "Wf" float not null,
     "Nf" float not null,
     "Nc" float not null,
