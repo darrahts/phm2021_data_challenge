@@ -539,7 +539,23 @@ def plot_feature_importances(model: object = None,
 
         plt.show()
 
-
+def plot_scatter_results(results_df,
+                         std_df,
+                         x,
+                         y):
+    results_df = results_df.sort_values(by=[y])
+    plt.figure(figsize=(12, 8))
+    sns.scatterplot(data=results_df, s=250, x=x, y=y, hue='sizes', palette='Dark2')  # , dodge=False)
+    sns.scatterplot(x=results_df[x], s=150, y=results_df[y] + std_df[y], marker='^', hue=results_df['sizes'],
+                    palette='Dark2')
+    sns.scatterplot(x=results_df[x], s=150, y=results_df[y] - std_df[y], marker='v', hue=results_df['sizes'],
+                    palette='Dark2')
+    for i in range(len(results_df)):
+        plt.plot([results_df[x][i], results_df[x][i]],
+                 [results_df[y][i] - std_df[y][i], results_df[y][i] + std_df[y][i]], color='gray')
+    plt.legend('')
+    plt.title(f"Results Scatter Plot ({x} x {y})")
+    plt.show()
 
 
 
