@@ -71,7 +71,6 @@ class Tuning():
                                          activation='relu',
                                          activity_regularizer=keras.regularizers.l2(l2=params.l2),
                                          name=f'hidden_{i}'))
-
             model.add(keras.layers.Dropout(rate=params.dropout_rate))
 
         model.add(keras.layers.Dense(self.num_outputs))
@@ -82,6 +81,130 @@ class Tuning():
                       metrics=[keras.metrics.RootMeanSquaredError()])
 
         return model
+
+
+
+    def create_lstm_hypermodel(self, hp):
+        pass
+
+
+    def build_lstm_hypermodel(self, params, *args, **kwargs):
+        pass
+
+
+    def create_cnn_hypermodel(self, hp):
+        pass
+
+
+    def build_cnn_hypermodel(self, params, *args, **kwargs):
+        pass
+
+
+
+    def hyperband_search(self,
+                         objective: str = 'root_mean_squared_error',
+                         mode: str = 'min',
+                         max_epochs: int = 10,
+                         factor: int = 2,
+                         hyperband_iterations: int = 3,
+                         executions_per_trial: int = 3,
+                         hypermodel: kt.HyperModel = None,
+                         directory: str = None,
+                         project_name: str = None,
+                         logger: TensorBoardLogger = None,
+                         X: object = None,
+                         y: object = None):
+
+        hyperband = MyTuner(oracle=kt.oracles.HyperbandOracle(
+                                objective=kt.Objective(objective, mode),
+                                max_epochs=max_epochs,
+                                factor=factor,
+                                hyperband_iterations=hyperband_iterations
+                                 ),
+                            executions_per_trial=executions_per_trial,
+                            hypermodel=hypermodel,
+                            directory=directory,
+                            project_name=project_name,
+                            logger=logger
+        )
+
+        setup_tb(hyperband)
+        hyperband.search(X,
+                         y,
+                         epochs=max_epochs,
+                         validation_split=.2)
+
+        return hyperband
+
+
+
+    def random_search(self,
+                     objective: str = 'root_mean_squared_error',
+                     mode: str = 'min',
+                     max_trials: int = 256,
+                     executions_per_trial: int = 3,
+                     hypermodel: kt.HyperModel = None,
+                     directory: str = None,
+                     project_name: str = None,
+                     logger: TensorBoardLogger = None,
+                     X: object = None,
+                     y: object = None):
+
+        randomsearch = MyTuner(oracle=kt.oracles.RandomSearchOracle(
+                                objective=kt.Objective(objective, mode),
+                                max_trials=max_trials,
+                                 ),
+                            executions_per_trial=executions_per_trial,
+                            hypermodel=hypermodel,
+                            directory=directory,
+                            project_name=project_name,
+                            logger=logger
+        )
+
+        setup_tb(randomsearch)
+        randomsearch.search(X,
+                         y,
+                         epochs=10,
+                         validation_split=.2)
+
+        return randomsearch
+
+
+
+    def bayesian_search(self,
+                        objective: str = 'root_mean_squared_error',
+                        mode: str = 'min',
+                        max_trials: int = 256,
+                        alpha: float = .00025,
+                        beta: float = 2.75,
+                        executions_per_trial: int = 3,
+                        hypermodel: kt.HyperModel = None,
+                        directory: str = None,
+                        project_name: str = None,
+                        logger: TensorBoardLogger = None,
+                        X: object = None,
+                        y: object = None):
+
+        bayesian = MyTuner(oracle=kt.oracles.BayesianOptimizationOracle(
+                            objective=kt.Objective(objective, mode),
+                            max_trials=max_trials,
+                            alpha=alpha,
+                            beta=beta
+                        ),
+                        executions_per_trial=executions_per_trial,
+                        hypermodel=hypermodel,
+                        directory=directory,
+                        project_name=project_name,
+                        logger=logger
+        )
+
+        setup_tb(bayesian)
+        bayesian.search(X,
+                         y,
+                         epochs=10,
+                         validation_split=.2)
+
+        return bayesian
 
 
 ###############################################################################################################
