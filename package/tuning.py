@@ -1,5 +1,7 @@
 import tensorflow as tf
 from tensorflow import keras
+from tensorflow.keras import layers, regularizers
+
 import keras_tuner as kt
 
 from kerastuner_tensorboard_logger import (
@@ -62,26 +64,34 @@ class Tuning():
         """
             @brief: builds the model with the specified params
         """
-        model = keras.Sequential()
+        # input layer
+        inputs = keras.Input(shape=self.input_shape, name='in1')
 
-        model.add(keras.Input(shape=self.input_shape))
+        # first layer
+        x = layers.Dense(units=params.units[0],
+                         activation='relu',
+                         activity_regularizer=keras.regularizers.l2(l2=params.l2),
+                         name=f'hidden_{0}')(inputs)
+        x = layers.Dropout(rate=params.dropout_rate)(x)
 
-        for i in range(params.layers):
-            model.add(keras.layers.Dense(units=params.units[i],
-                                         activation='relu',
-                                         activity_regularizer=keras.regularizers.l2(l2=params.l2),
-                                         name=f'hidden_{i}'))
-            model.add(keras.layers.Dropout(rate=params.dropout_rate))
+        # subsequent layers
+        for i in range(1, params.layers):
+            x = layers.Dense(units=params.units[i],
+                             activation='relu',
+                             activity_regularizer=keras.regularizers.l2(l2=params.l2),
+                             name=f'hidden_{i}')(x)
+            x = layers.Dropout(rate=params.dropout_rate)(x)
 
-        model.add(keras.layers.Dense(self.num_outputs))
+        # output layer
+        outputs = layers.Dense(self.num_outputs)(x)
 
+        model = keras.Model(inputs=inputs, outputs=outputs)
         # compile
         model.compile(optimizer=keras.optimizers.Adam(learning_rate=params.learning_rate),
                       loss='mse',
                       metrics=[keras.metrics.RootMeanSquaredError()])
-
+        print("returning model")
         return model
-
 
 
     def create_lstm_hypermodel(self, hp):
