@@ -399,7 +399,9 @@ class DB:
     @staticmethod
     def _get_data(units: [] = None,
                   downsample: int = 5,
-                  table: str = 'summary_tb',
+                  hs: int = None,
+                  limit: int = None,
+                  tables: [] = None,
                   drop_cols: [] = None,
                   db: psycopg2.extensions.connection = None) -> pd.DataFrame:
         valid_units = DB.execute("select id from asset_tb;", db).values
@@ -409,17 +411,41 @@ class DB:
             'degradation_tb'
         ]
         assert units is None or all(unit in valid_units for unit in units), '[ERROR], either do not pass a value for <units> or ensure all values passed are valid'
-        assert table in valid_tables, f'[ERROR], invalid table specified. Select a table in <{valid_tables}>'
-        if units is None or downsample < 2:
+        for t in tables:
+            assert t in valid_tables, f'[ERROR], invalid table specified. Select a table in <{valid_tables}>'
+        if units is None and downsample < 2:
             choice = input("It is highly recommended to pass a list of units and/or downsampling factor greater than 2 as selecting all units will take a few minutes (this query has not been optimized). proceed? (y/n): ")
-            if choice == 'y' or choice == 'Y':
-                statement = f"""select tb.* from {table} tb;"""
+            if len(tables) == 1:
+                if choice == 'y' or choice == 'Y':
+                    statement = f"""select tb.* from {tables[0]} tb;"""
             else:
                 return pd.DataFrame()
         else:
-            statement = f"""select tb.* from (select *, row_number() over() rn from {table}) tb where asset_id in {tuple(units)} and tb.rn % {downsample} = 0;"""
+            if len(tables) == 1:
+                statement = f"""select tb.* from (select * from {tables[0]} order by id asc) tb where asset_id in {tuple(units)} and tb.id % {downsample} = 0;"""
+            elif len(tables) == 2:
+                statement = f"""select s."cycle", 
+                                       s.hs, 
+                                       s.alt, 
+                                       s."Mach", 
+                                       s."TRA", 
+                                       s."T2",
+                                       e."Fc",
+                                       t.*
+                                       from summary_tb s 
+                                       inner join telemetry_tb t on s.id = t.id 
+                                       inner join engine_ncmapss_tb e on s.asset_id = e.id"""
+                if len(units) > 1:
+                    statement = statement + f""" where s.asset_id in {tuple(units)}"""
+                else:
+                    statement = statement + f""" where s.asset_id = {units[0]}"""
+
+                if hs is not None:
+                    statement = statement + f""" and s.hs = {hs}"""
+
+                statement = statement + f""" and s.id % {downsample} = 0 order by t.id asc;"""
         if drop_cols is None:
-            return DB.execute(statement, db).drop(columns=['rn'])
+            return DB.execute(statement, db)
         else:
             return DB.execute(statement, db).drop(columns=drop_cols)
 
