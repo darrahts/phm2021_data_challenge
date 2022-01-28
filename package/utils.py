@@ -464,11 +464,12 @@ def chunk_generator(X, n):
 def plot_loss(history):
     plt.plot(history.history['loss'], label='loss')
     plt.plot(history.history['val_loss'], label='val_loss')
-    plt.ylim([0, 10])
+    #plt.ylim([0, 10])
     plt.xlabel('Epoch')
     plt.ylabel('Error [MPG]')
     plt.legend()
     plt.grid(True)
+    plt.show()
 
 
 def plot_feature_distributions(df: pd.DataFrame = None,
