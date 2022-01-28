@@ -139,8 +139,7 @@ create table telemetry_tb(
     "Ps30" float not null,
     "P40" float not null,
     "P50" float not null,
-    unique("id", "Wf", "Nf", "Nc", "T24", "T30", "T48", "T50", "P15", "P2", "P21", "P24", "Ps30", "P40", "P50"),
-    unique("id", "dt")
+    unique("id", "Wf", "Nf", "Nc", "T24", "T30", "T48", "T50", "P15", "P2", "P21", "P24", "Ps30", "P40", "P50")
 );
 -- create partitions on id, then dt
 -- select create_hypertable('telemetry_tb', 'id', 'dt');
