@@ -1,23 +1,23 @@
-Model: "model_13"
+Model: "model_17"
 _________________________________________________________________
  Layer (type)                Output Shape              Param #   
 =================================================================
  in1 (InputLayer)            [(None, 5)]               0         
                                                                  
- hd1 (Dense)                 (None, 56)                336       
+ hd1 (Dense)                 (None, 70)                420       
                                                                  
- hd2 (Dense)                 (None, 112)               6384      
+ hd2 (Dense)                 (None, 105)               7455      
                                                                  
- hd3 (Dense)                 (None, 112)               12656     
+ hd3 (Dense)                 (None, 140)               14840     
                                                                  
- hd4 (Dense)                 (None, 112)               12656     
+ hd4 (Dense)                 (None, 105)               14805     
                                                                  
- hd5 (Dense)                 (None, 56)                6328      
+ hd5 (Dense)                 (None, 70)                7420      
                                                                  
- dense_13 (Dense)            (None, 14)                798       
+ dense_17 (Dense)            (None, 14)                994       
                                                                  
 =================================================================
-Total params: 39,158
-Trainable params: 39,158
+Total params: 45,934
+Trainable params: 45,934
 Non-trainable params: 0
 _________________________________________________________________
