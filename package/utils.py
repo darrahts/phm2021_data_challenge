@@ -227,20 +227,37 @@ def train_test_split_old(df: pd.DataFrame = None,
 
 
 def train_test_split(df: pd.DataFrame = None,
+                    units: [] = None,
                      y_labels: [] = None,
                      t_labels: [] = None,
                      train_pct: float = .75,
                      val_pct: float = .10,
                      test_pct: float = .15,
                      verbose: bool = False):
-    units = list(pd.unique(df.asset_id))
+    if units:
+        units = units
+    else:
+        print('here')
+        units = list(pd.unique(df.asset_id))
     num_units = len(units)
+    print(num_units)
     train_cnt = int(num_units * train_pct)
+    print(train_cnt)
     val_cnt = int(num_units * val_pct)
-    test_cnt = int(num_units * test_pct) + 1
+    print(val_cnt)
+    test_cnt = int(num_units * test_pct)
+    print(test_cnt)
+
+
     if verbose:
         print(f"train, val, test set counts: {train_cnt}, {val_cnt}, {test_cnt}")
 
+    print(num_units, (train_cnt+val_cnt+test_cnt))
+    if num_units - (train_cnt + val_cnt + test_cnt) == 2:
+        #train_cnt += 1
+        val_cnt += 1
+        test_cnt += 1
+        
     assert train_cnt + val_cnt + test_cnt == num_units, "error1"
 
     train_units = random.sample(units, train_cnt)
@@ -266,11 +283,11 @@ def train_test_split(df: pd.DataFrame = None,
     train_y = np.array(train_df[y_labels], dtype=np.float32)
     val_y = np.array(val_df[y_labels], dtype=np.float32)
     test_y = np.array(test_df[y_labels], dtype=np.float32)
-
+    
     train_df = train_df[t_labels]
     val_df = val_df[t_labels]
     test_df = test_df[t_labels]
-
+    
     return train_df, train_y, val_df, val_y, test_df, test_y
 
 
@@ -453,11 +470,8 @@ def chunk_generator(X, n):
     """
     breaks large data into smaller equal pieces + remainder as last yield
     """
-    j = 1
     for i in range(0, len(X), n):
-        yield j, X[i:i+n]
-        j = j + 1
-
+        yield i+1, X[i:i+n]
 
 
 
@@ -559,12 +573,51 @@ def plot_scatter_results(results_df,
     plt.show()
 
 
+def plot_trace_samples(fig, y, filt, p, j):
+    x = np.arange(len(y))
+    plt.subplot(4,4,j+1)
+    plt.plot(x,y, c='red', zorder=-1)
+    plt.plot(x, filt, c='cyan')
+    plt.plot(x, p(x), linewidth=3)
 
 
 
+def add_time_column(units, df):
+    df['time'] = ""
+    for unit in units:
+        for cycle in pd.unique(df[df.asset_id == unit].cycle):
+            length = len(df[(df.asset_id == unit) & (df.cycle == cycle)])
+            x = np.arange(0, length)/(length-1)
+            df.loc[(df.asset_id == unit) & (df.cycle == cycle), 'time'] = x
+
+
+def add_rul_column(units, df):
+    df['rul'] = ""
+    for unit in units:
+        eol = max(df[df.asset_id == unit].cycle)
+        for cycle in pd.unique(df[df.asset_id == unit].cycle):
+            length = len(df[(df.asset_id == unit) & (df.cycle == cycle)])
+            x = np.arange(0, length)/(length-1)
+            df.loc[(df.asset_id == unit) & (df.cycle == cycle), 'rul'] = eol - (cycle-1) - x
+
+
+def outlier_removal_z_score(data):
+    mean = np.zeros((data.shape[1],), dtype=np.float32)
+    std = np.zeros((data.shape[1],), dtype=np.float32)
+
+    for i in range(data.shape[1]):
+        mean[i] = np.mean(data[:,i])
+        std[i] = np.std(data[:,i])
+
+    for i in range(data.shape[0]):
+        z = (data[i,:] - mean) / std
+        outliers = [i for i, x in enumerate((z > 3) | (z < -3)) if x]
+        if outliers:
+            data[i,outliers] = mean[outliers]
+
+    return data
 
 
 
-
-
-
+def outlier_removal(df):
+    pass
