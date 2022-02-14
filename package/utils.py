@@ -33,6 +33,7 @@ def check_gpu():
     print(f"[INFO] GPU?: <{has_gpu}> {gpu}")
     if (has_gpu):
         for i in range(len(gpu)):
+            print("expanding memory growth")
             tf.config.experimental.set_memory_growth(gpu[i], True)
     return has_gpu
 
@@ -234,11 +235,13 @@ def train_test_split(df: pd.DataFrame = None,
                      val_pct: float = .10,
                      test_pct: float = .15,
                      verbose: bool = False):
-    if units:
-        units = units
-    else:
-        print('here')
-        units = list(pd.unique(df.asset_id))
+    # if units.any():
+    #     units = units
+    #     print(units)
+    #     print(type(units))
+    # else:
+    #     print('here')
+    #     units = list(pd.unique(df.asset_id))
     num_units = len(units)
     print(num_units)
     train_cnt = int(num_units * train_pct)
@@ -589,6 +592,7 @@ def add_time_column(units, df):
             length = len(df[(df.asset_id == unit) & (df.cycle == cycle)])
             x = np.arange(0, length)/(length-1)
             df.loc[(df.asset_id == unit) & (df.cycle == cycle), 'time'] = x
+    #df.time = df.time + (df.cycle -1)
 
 
 def add_rul_column(units, df):

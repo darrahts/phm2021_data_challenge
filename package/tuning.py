@@ -99,13 +99,13 @@ class Tuning():
             @brief: the hypermodel function passed to the tuner, calls build_model
         """
         # tune the number of layers
-        max_layers = 8
-        min_layers = 4
+        max_layers = 6
+        min_layers = 3
         layers = hp.Int('layers', min_value=min_layers, max_value=max_layers, step=1)
 
         # tune the number of units per layer
         min_units = 64
-        max_units = 256
+        max_units = 128
         units = hp.Int('units', min_value=min_units, max_value=max_units, step=32)
         # units = []
         # for i in range(max_layers):
@@ -115,12 +115,12 @@ class Tuning():
         dropout_rate = hp.Choice('dropout_rate', values=[0.0, .25, .5])
 
         # tune regularization rate
-        l2 = None #.00001#hp.Choice('l2', values=[.000001, .00001, .0001, .001])
-
+        l2 = -1 #.00001#hp.Choice('l2', values=[.000001, .00001, .0001, .001])
+        recurrent_dropout = 0#hp.Choice('recurrent_dropout', values = [0.0, .25, .5])
         # tune the learning rate for the optimizer
         learning_rate = hp.Choice('learning_rate', values=[.0001, .00025, .0005, .001, .0025, .005])
 
-        params = MyParameters(layers=layers, units=units, dropout_rate=dropout_rate, l2=l2, learning_rate=learning_rate)
+        params = MyParameters(layers=layers, units=units, dropout_rate=dropout_rate, recurrent_dropout=recurrent_dropout, l2=l2, learning_rate=learning_rate)
 
         return self.build_lstm_model(params)
 
@@ -132,46 +132,47 @@ class Tuning():
         """
         # input layer
         inputs = keras.Input(shape=self.input_shape, name='in1')
-        if kwargs['l2'] is not None:
+        if params.l2 > 0:
+            print("l2 > 0")
             # first layer
-            x = layers.LSTM(units=params.units, 
+            x = layers.Bidirectional(layers.LSTM(units=params.units, 
                             return_sequences=True, 
                             kernel_regularizer=regularizers.l2(l2=params.l2),
-                            name=f'hidden_{0}')(inputs)
+                            name=f'hidden_{0}'))(inputs)
             x = layers.Dropout(rate=params.dropout_rate)(x)
 
             # subsequent layers
             for i in range(1, params.layers-1):
-                x = layers.LSTM(units=params.units, 
+                x = layers.Bidirectional(layers.LSTM(units=params.units, 
                                 return_sequences=True, 
                                 kernel_regularizer=regularizers.l2(l2=params.l2),
-                                name=f'hidden_{i}')(x)
+                                name=f'hidden_{i}'))(x)
                 x = layers.Dropout(rate=params.dropout_rate)(x)
             
             # last layers
-            x = layers.LSTM(units=params.units, 
+            x = layers.Bidirectional(layers.LSTM(units=params.units, 
                             return_sequences=False, 
                             kernel_regularizer=regularizers.l2(l2=params.l2),
-                            name=f'hidden_{i+1}')(x)
+                            name=f'hidden_{i+1}'))(x)
             x = layers.Dropout(rate=params.dropout_rate)(x)     
         else:
                         # first layer
-            x = layers.LSTM(units=params.units, 
+            x = layers.Bidirectional(layers.LSTM(units=params.units, 
                             return_sequences=True, 
-                            name=f'hidden_{0}')(inputs)
+                            name=f'hidden_{0}'))(inputs)
             x = layers.Dropout(rate=params.dropout_rate)(x)
 
             # subsequent layers
             for i in range(1, params.layers-1):
-                x = layers.LSTM(units=params.units, 
+                x = layers.Bidirectional(layers.LSTM(units=params.units, 
                                 return_sequences=True, 
-                                name=f'hidden_{i}')(x)
+                                name=f'hidden_{i}'))(x)
                 x = layers.Dropout(rate=params.dropout_rate)(x)
             
             # last layers
-            x = layers.LSTM(units=params.units, 
+            x = layers.Bidirectional(layers.LSTM(units=params.units, 
                             return_sequences=False, 
-                            name=f'hidden_{i+1}')(x)
+                            name=f'hidden_{i+1}'))(x)
             x = layers.Dropout(rate=params.dropout_rate)(x)     
 
         # output layer
@@ -314,11 +315,11 @@ class MyTuner(kt.Tuner):
             run_trial: allows for batch_size to be tuned
     """
     def run_trial(self, trial, *args, **kwargs):
-        min_batch_size = 32 if not 'min_batch_size' in kwargs else kwargs['min_batch_size']
-        max_batch_size = 256 if not 'max_batch_size' in kwargs else kwargs['max_batch_size']
-        batch_size_step = 32 if not 'batch_size_step' in kwargs else kwargs['max_batch_size']
+        min_batch_size = 256 if not 'min_batch_size' in kwargs else kwargs['min_batch_size']
+        max_batch_size = 512 if not 'max_batch_size' in kwargs else kwargs['max_batch_size']
+        batch_size_step = 256 if not 'batch_size_step' in kwargs else kwargs['max_batch_size']
 
-        kwargs['batch_size'] = 1024#trial.hyperparameters.Int('batch_size', min_batch_size, max_batch_size, step=batch_size_step)
+        kwargs['batch_size'] = 512#trial.hyperparameters.Int('batch_size', min_batch_size, max_batch_size, step=batch_size_step)
         return super(MyTuner, self).run_trial(trial, *args, **kwargs)
 
 
@@ -339,6 +340,7 @@ class MyParameters():
         x = 1 if not 'a' in kwargs else kwargs['a']
         self.metric = "na" if not 'metric' in kwargs else kwargs['metric']
         self.score = -1 if not 'score' in kwargs else kwargs['score']
+        self.recurrent_dropout = kwargs['recurrent_dropout']
 
     def __str__(self):
         return self.layers
