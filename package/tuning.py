@@ -106,7 +106,7 @@ class Tuning():
         # tune the number of units per layer
         min_units = 64
         max_units = 128
-        units = hp.Int('units', min_value=min_units, max_value=max_units, step=32)
+        units = hp.Int('units', min_value=min_units, max_value=max_units, step=16)
         # units = []
         # for i in range(max_layers):
         #     units.append(hp.Int(f'units_{i}', min_value=min_units, max_value=max_units, step=32))
