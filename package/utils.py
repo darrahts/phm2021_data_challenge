@@ -483,7 +483,18 @@ def plot_loss(history):
     plt.plot(history.history['val_loss'], label='val_loss')
     #plt.ylim([0, 10])
     plt.xlabel('Epoch')
-    plt.ylabel('Error [MPG]')
+    plt.ylabel('Loss')
+    plt.legend()
+    plt.grid(True)
+    plt.show()
+
+
+def plot_rmse(history):
+    plt.plot(history.history['root_mean_squared_error'], label='root_mean_squared_error')
+    plt.plot(history.history['val_root_mean_squared_error'], label='val_root_mean_squared_error')
+    #plt.ylim([0, 10])
+    plt.xlabel('Epoch')
+    plt.ylabel('RMSE')
     plt.legend()
     plt.grid(True)
     plt.show()
@@ -576,13 +587,8 @@ def plot_scatter_results(results_df,
     plt.show()
 
 
-def plot_trace_samples(fig, y, filt, p, j):
-    x = np.arange(len(y))
-    plt.subplot(4,4,j+1)
-    plt.plot(x,y, c='red', zorder=-1)
-    plt.plot(x, filt, c='cyan')
-    plt.plot(x, p(x), linewidth=3)
-
+def transform():
+    pass
 
 
 def add_time_column(units, df):
