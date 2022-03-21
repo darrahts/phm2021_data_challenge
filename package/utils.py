@@ -499,6 +499,9 @@ def plot_rmse(history):
     plt.grid(True)
     plt.show()
 
+def plot_test_unit():
+    pass
+
 
 def plot_feature_distributions(df: pd.DataFrame = None,
                                feature_range: tuple = (-1,1),
