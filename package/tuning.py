@@ -101,26 +101,28 @@ class Tuning():
         # tune the number of layers
         max_layers = 6
         min_layers = 3
-        layers = hp.Int('layers', min_value=min_layers, max_value=max_layers, step=1)
+        layers = 3#hp.Int('layers', min_value=min_layers, max_value=max_layers, step=1)
 
         # tune the number of units per layer
         min_units = 32
-        max_units = 128
-        units = hp.Int('units', min_value=min_units, max_value=max_units, step=16)
+        max_units = 64
+        units = hp.Int('units', min_value=min_units, max_value=max_units, step=32)
         # units = []
         # for i in range(max_layers):
         #     units.append(hp.Int(f'units_{i}', min_value=min_units, max_value=max_units, step=32))
 
         # tune the dropout rate
-        dropout_rate = hp.Choice('dropout_rate', values=[0.0, .25, .4, .5])
+        dropout_rate = hp.Choice('dropout_rate', values=[.2, .25, .4, .5])
 
         # tune regularization rate
-        l2 = -1 #.00001#hp.Choice('l2', values=[.000001, .00001, .0001, .001])
+        l1 = hp.Choice('l1', values=[.000001, .000005, .00001, .00005, .0001, .0005, .001])
+        l2 = -1
+
         recurrent_dropout = 0#hp.Choice('recurrent_dropout', values = [0.0, .25, .5])
         # tune the learning rate for the optimizer
-        learning_rate = hp.Choice('learning_rate', values=[.0001, .00025, .0005, .001, .0025, .005])
+        learning_rate = hp.Choice('learning_rate', values=[.0001, .00025, .0005, .00075, .001, .0025, .005])
 
-        params = MyParameters(layers=layers, units=units, dropout_rate=dropout_rate, recurrent_dropout=recurrent_dropout, l2=l2, learning_rate=learning_rate)
+        params = MyParameters(layers=layers, units=units, dropout_rate=dropout_rate, recurrent_dropout=recurrent_dropout, l1=l1, l2=l2, learning_rate=learning_rate)
 
         return self.build_bilstm_model(params)
 
@@ -134,8 +136,10 @@ class Tuning():
         inputs = keras.Input(shape=self.input_shape, name='in1')
                     # first layer
         x = layers.Bidirectional(layers.LSTM(units=params.units, 
-                        return_sequences=True, 
-                        name=f'hidden_{0}'))(inputs)
+                            recurrent_dropout=params.recurrent_dropout,
+                            kernel_regularizer=regularizers.l1_l2(l1=params.l1, l2=params.l2),
+                            return_sequences=True, 
+                            name=f'hidden_{0}'))(inputs)
 
         if params.dropout_rate > 0.0:
             x = layers.Dropout(rate=params.dropout_rate)(x)
@@ -143,6 +147,8 @@ class Tuning():
         # subsequent layers
         for i in range(1, params.layers-1):
             x = layers.Bidirectional(layers.LSTM(units=params.units, 
+                            recurrent_dropout=params.recurrent_dropout,
+                            kernel_regularizer=regularizers.l1_l2(l1=params.l1, l2=params.l2),
                             return_sequences=True, 
                             name=f'hidden_{i}'))(x)
             
@@ -151,8 +157,10 @@ class Tuning():
         
         # last layers
         x = layers.Bidirectional(layers.LSTM(units=params.units, 
-                        return_sequences=False, 
-                        name=f'hidden_{i+1}'))(x)
+                            recurrent_dropout=params.recurrent_dropout,
+                            kernel_regularizer=regularizers.l1_l2(l1=params.l1, l2=params.l2),
+                            return_sequences=False, 
+                            name=f'hidden_{i+1}'))(x)
 
         if params.dropout_rate > 0.0:
             x = layers.Dropout(rate=params.dropout_rate)(x)     
@@ -318,6 +326,7 @@ class MyParameters():
         self.units = kwargs['units']
         self.dropout_rate = kwargs['dropout_rate']
         self.l2 = kwargs['l2']
+        self.l1 = kwargs['l1']
         self.learning_rate = kwargs['learning_rate']
         x = 1 if not 'a' in kwargs else kwargs['a']
         self.metric = "na" if not 'metric' in kwargs else kwargs['metric']
