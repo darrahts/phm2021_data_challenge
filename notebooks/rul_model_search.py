@@ -41,25 +41,39 @@ model_location = base_dir + '/models'
 data_location = base_dir + '/data'
 data_header = f'Fc-{Fc}_dataset-{dataset}'
 
+X_train = np.load(f'{data_location}/{data_header}_X_train.npy').astype('float32')
+y_train = np.load(f'{data_location}/{data_header}_y_train.npy').astype('float32')
 
-X_train = np.load(f'{data_location}/{data_header}_X.npy').astype(np.float32)
-y_train = np.load(f'{data_location}/{data_header}_y.npy').astype(np.float32)
+X_test = np.load(f'{data_location}/{data_header}_X_test.npy').astype('float32')
+y_test = np.load(f'{data_location}/{data_header}_y_test.npy').astype('float32')
 
+X_val = np.load(f'{data_location}/{data_header}_X_val.npy').astype('float32')
+y_val = np.load(f'{data_location}/{data_header}_y_val.npy').astype('float32')
+
+X = np.vstack([X_train, X_test, X_val])
+y = np.vstack([y_train, y_test, y_val])
+
+lookback = X.shape[1]
+horizon = 1
+n_out = 1
+n_features = X.shape[2]
+
+footer = 'v4'
 input_shape = (lookback, n_features)
 my_tuning = tuning.Tuning(input_shape, n_out)
 bayesian_tuning = my_tuning.bayesian_search(objective='root_mean_squared_error',
                                             mode='min',
                                             max_trials=128,
-                                            alpha=.0002,
-                                            beta=4,
+                                            alpha=.00095,
+                                            beta=7,
                                             epochs=5,
                                             executions_per_trial=1,
                                             hypermodel=my_tuning.create_bilstm_hypermodel,
-                                            directory=f'{log_location}/{data_header}',
-                                            project_name='lstm',
+                                            directory=f'{log_location}/{data_header}_{footer}',
+                                            project_name='bilstm',
                                             logger=TensorBoardLogger(
                                                 metrics=['root_mean_squared_error'],
-                                                         logdir=f'{log_location}/{data_header}/hparams'
+                                                         logdir=f'{log_location}/{data_header}_{footer}/hparams'
                                             ),
                                             X=X_train,
                                             y=y_train)
@@ -70,5 +84,5 @@ print(bayesian_tuning_params.values)
 bayesian_tuning_model.summary()
 
 
-bayesian_tuning_model.save(f'{model_location}/{data_header}_best.h5')
-bayesian_tuning_model.save(f'{model_location}/{data_header}_best')
+bayesian_tuning_model.save(f'{model_location}/{data_header}_{footer}_best.h5')
+bayesian_tuning_model.save(f'{model_location}/{data_header}_{footer}_best')
