@@ -1,0 +1,10 @@
+name,path,type,description
+flight_effects_folder,models/flight_effects,folder,folder for the model and scalers used in the preprocessing step to bring out the degradation trend in the sensor degradation
+flight_effects,models/flight_effects/flight_effects,keras model,use model.load_model()
+flight_effects_xscaler,models/flight_effects/flight_effects_xscaler.pkl,scaler, xscaler used for the flight effects model
+flight_effects_yscaler,models/flight_effects/flight_effects_yscaler.pkl,scaler, yscaler used for the flight effects model
+flight_effects_h5,models/flight_effects/flight_effects.h5,h5 model, same as keras model just in h5 format for redundancy
+data_location,data,folder,folder for all post-processed data
+log_location,/logs,folder,log folder
+model_location,/models,folder,models folder
+data_location,/data,folder,post processed data folder
