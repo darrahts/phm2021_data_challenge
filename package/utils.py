@@ -441,32 +441,25 @@ def generate_serial_number(length: int = 8) -> str:
     return ''.join(random.choices(string.digits + string.ascii_letters, k=length))
 
 
+def load_json(log_location, data_header, footer):
+    fname = log_location + '/' + data_header + footer
+    with open(fname, 'r') as f:
+        data = json.loads(f.read())
+    return data
 
 
+def parse_json(json_object, target_key, res=[]):
+    if type(json_object) is dict and json_object:
+        for key in json_object:
+            if key == target_key:
+                res.append(json_object[key])
+            parse_json(json_object[key], target_key, res)
 
-def _getsizeof(obj, ids):
-    """
-    recursive function to get the true size of a python object in bytes
-    pass set() to ids on initial call, this is a recursive function
-    """
-    d = _getsizeof
-    if id(obj) in ids:
-        return 0
-
-    r = getsizeof(obj)
-    ids.add(id(obj))
-
-    if isinstance(obj, str):
-        return r
-
-    if isinstance(obj, Mapping):
-        return r + sum(d(k, ids) + d(v, ids) for k, v in obj.iteritems())
-
-    if isinstance(obj, Container):
-        return r + sum(d(x, ids) for x in obj)
-
-    return r
-
+    elif type(json_object) is list and json_object:
+        for item in json_object:
+            parse_json(item, target_key, res)
+    
+    return res
 
 
 def chunk_generator(X, n):
@@ -588,6 +581,40 @@ def plot_scatter_results(results_df,
     plt.legend('')
     plt.title(f"Results Scatter Plot ({x} x {y})")
     plt.show()
+
+
+
+def load_model(model_location, data_header, model_name, model_number):
+    return tf.keras.models.load_model(f'{model_location}/{data_header}/{model_name}/model_{model_number}')
+
+
+def plot_rul_results(files, data_header, notes=''):
+    for i in range(len(files)):
+        params = parse_json(files[i][f'model_{i}'], 'params', [])[0]
+        num_samples = len([x for x in files[i][f'model_{i}'].keys() if 'data' in x])
+        
+        for j in range(num_samples):
+            test_unit = parse_json(files[i][f'model_{i}'][f'data_{j}'], 'test_unit', [])[0]
+            val_unit = parse_json(files[i][f'model_{i}'][f'data_{j}'], 'val_unit', [])[0]
+            test_rmse = round(parse_json(files[i][f'model_{i}'][f'data_{j}'], 'test_rmse', [])[0], 3)
+            val_rmse = round(parse_json(files[i][f'model_{i}'][f'data_{j}'], 'val_rmse', [])[0], 3)
+            trace = parse_json(files[i][f'model_{i}'][f'data_{j}'], 'trace', [])[0]
+            pred = parse_json(files[i][f'model_{i}'][f'data_{j}'], 'pred', [])[0]
+
+
+            fig = plt.figure(figsize=(5,5))
+            plt.plot(np.array(trace), c='b', label='actual')
+            plt.plot(np.array(pred), c='r', label='prediction')
+            plt.legend()
+            plt.xlabel('sample')
+            plt.ylabel('RUL (cycles)')
+            plt.text(5000, 10, f'test rmse: {test_rmse}')
+            plt.text(5000, 7, f'val rmse: {val_rmse}')
+            plt.text(5000, 2, data_header)
+            if notes:
+                plt.text(500, 1, notes)
+            plt.title(f"test unit: {test_unit}, model: {params['layers']}-layers_{params['units']}-units_{str(params['dropout_rate']).replace('.', '')}-dropout")
+            plt.show()
 
 
 def transform():
