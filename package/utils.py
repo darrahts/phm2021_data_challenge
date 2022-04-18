@@ -598,16 +598,16 @@ def load_model(model_location, data_header, model_name, model_number):
 
 def plot_rul_results(files, data_header, notes=''):
     for i in range(len(files)):
-        params = parse_json(files[i][f'model_{i}'], 'params', [])[0]
-        num_samples = len([x for x in files[i][f'model_{i}'].keys() if 'data' in x])
+        params = parse_json(files[i], 'params', [])[0]
+        num_samples = len([x for x in files[i].keys() if 'data' in x])
         
         for j in range(num_samples):
-            test_unit = parse_json(files[i][f'model_{i}'][f'data_{j}'], 'test_unit', [])[0]
-            val_unit = parse_json(files[i][f'model_{i}'][f'data_{j}'], 'val_unit', [])[0]
-            test_rmse = round(parse_json(files[i][f'model_{i}'][f'data_{j}'], 'test_rmse', [])[0], 3)
-            val_rmse = round(parse_json(files[i][f'model_{i}'][f'data_{j}'], 'val_rmse', [])[0], 3)
-            trace = parse_json(files[i][f'model_{i}'][f'data_{j}'], 'trace', [])[0]
-            pred = parse_json(files[i][f'model_{i}'][f'data_{j}'], 'pred', [])[0]
+            test_unit = parse_json(files[i][f'data_{j}'], 'test_unit', [])[0]
+            val_unit = parse_json(files[i][f'data_{j}'], 'val_unit', [])[0]
+            test_rmse = round(parse_json(files[i][f'data_{j}'], 'test_rmse', [])[0], 3)
+            val_rmse = round(parse_json(files[i][f'data_{j}'], 'val_rmse', [])[0], 3)
+            trace = parse_json(files[i][f'data_{j}'], 'trace', [])[0]
+            pred = parse_json(files[i][f'data_{j}'], 'pred', [])[0]
 
 
             fig = plt.figure(figsize=(5,5))
@@ -624,6 +624,7 @@ def plot_rul_results(files, data_header, notes=''):
             plt.title(f"test unit: {test_unit}, model: {params['layers']}-layers_{params['units']}-units_{str(params['dropout_rate']).replace('.', '')}-dropout")
             plt.show()
 
+        print("*********************************************")
 
 def transform():
     pass
