@@ -45,7 +45,7 @@ class Tuning():
         res = tf.map_fn(fn=lambda x: tf.math.exp(-x/13) if x < 0 else tf.math.exp(x/10), elems=diff)
         s_score = tf.math.reduce_sum(res)
 
-        rmse = tf.math.sqrt(tf.math.reduce_sum(backend.mean(tf.math.squared_difference(y_pred, y_true), axis=-1)))
+        rmse = tf.math.reduce_sum(backend.mean(tf.math.squared_difference(y_pred, y_true), axis=-1))
 
         score = s_score + rmse
     
