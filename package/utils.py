@@ -260,8 +260,11 @@ def train_test_split(df: pd.DataFrame = None,
         #train_cnt += 1
         val_cnt += 1
         test_cnt += 1
+
+    elif num_units - (train_cnt + val_cnt + test_cnt) == 1:
+        test_cnt += 1
         
-    assert train_cnt + val_cnt + test_cnt == num_units, "error1"
+    assert train_cnt + val_cnt + test_cnt == num_units, f"{num_units}, {train_cnt + val_cnt + test_cnt} error1"
 
     train_units = random.sample(units, train_cnt)
     units = list(set(units) - set(train_units))
@@ -287,6 +290,11 @@ def train_test_split(df: pd.DataFrame = None,
     val_y = np.array(val_df[y_labels], dtype=np.float32)
     test_y = np.array(test_df[y_labels], dtype=np.float32)
     
+    if 'Fc' not in train_df.columns:
+        t_labels.remove('Fc')
+    if 'Fc_1' not in t_labels and 'Fc_1' in train_df.columns:
+        [t_labels.append(f'Fc_{i}') for i in [1,2,3]]
+
     train_df = train_df[t_labels]
     val_df = val_df[t_labels]
     test_df = test_df[t_labels]

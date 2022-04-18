@@ -3,6 +3,9 @@ from tensorflow import keras
 from tensorflow.keras import layers, regularizers
 
 import keras_tuner as kt
+from keras import backend
+
+import numpy as np
 
 from kerastuner_tensorboard_logger import (
     TensorBoardLogger,
@@ -28,6 +31,25 @@ class Tuning():
 
         x = 1 if not 'a' in kwargs else kwargs['a']
 
+
+
+
+    @tf.function
+    def loss_fcn(self, y_t, y_p):
+        
+        y_pred = tf.convert_to_tensor(y_p)
+        y_true = tf.cast(y_t, y_pred.dtype)
+        
+        diff = y_pred-y_true
+            
+        res = tf.map_fn(fn=lambda x: tf.math.exp(-x/13) if x < 0 else tf.math.exp(x/10), elems=diff)
+        s_score = tf.math.reduce_sum(res)
+
+        rmse = tf.math.sqrt(tf.math.reduce_sum(backend.mean(tf.math.squared_difference(y_pred, y_true), axis=-1)))
+
+        score = s_score + rmse
+    
+        return score / 2.0
 
     def create_hypermodel(self, hp):
         """
@@ -128,6 +150,7 @@ class Tuning():
 
 
 
+
     def build_bilstm_model(self, params, *args, **kwargs):
         """
             @brief: builds the model with the specified params
@@ -171,7 +194,7 @@ class Tuning():
         model = keras.Model(inputs=inputs, outputs=outputs)
         # compile
         model.compile(optimizer=keras.optimizers.Adam(learning_rate=params.learning_rate),
-                      loss='mse',
+                      loss=self.loss_fcn,#'mse',
                       metrics=[keras.metrics.RootMeanSquaredError()])
         print("returning model")
         return model
