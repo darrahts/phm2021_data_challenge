@@ -6,6 +6,7 @@ import keras_tuner as kt
 from keras import backend
 
 import numpy as np
+import random
 
 from kerastuner_tensorboard_logger import (
     TensorBoardLogger,
@@ -120,30 +121,88 @@ class Tuning():
         """
             @brief: the hypermodel function passed to the tuner, calls build_model
         """
+        tf.random.set_seed(np.random.randint(9999))
+        print('***create_bilstm_hypermodel***')
+
         # tune the number of layers
-        max_layers = 6
-        min_layers = 3
-        layers = 3#hp.Int('layers', min_value=min_layers, max_value=max_layers, step=1)
+        # max_layers = 5
+        # min_layers = 3
+        # layers = hp.Int('layers', min_value=min_layers, max_value=max_layers, step=1)
+
+        configurations = {
+            'a': {
+                'layers': 3,
+                'units': 32,
+                'learning_rate': .0025,
+                'dropout_rate':.5
+            },
+            'b': {
+                'layers': 3,
+                'units': 32,
+                'learning_rate': .001,
+                'dropout_rate': .25
+            },
+            'c': {
+                'layers': 3,
+                'units': 32,
+                'learning_rate': .001,
+                'dropout_rate': .5
+            },
+            'd': {
+                'layers': 4,
+                'units': 32,
+                'learning_rate': .001,
+                'dropout_rate': .25
+            },
+            # 'e': {
+            #     'layers': 4,
+            #     'units': 32,
+            #     'learning_rate': .0005,
+            #     'dropout_rate':.2
+            # },
+            # 'f': {
+            #     'layers': 5,
+            #     'units': 32,
+            #     'learning_rate': .0005,
+            #     'dropout_rate': .2
+            # }
+        }
+
+        #config = random.choice(list(configurations.keys()))
+        architecture = hp.Choice('config', values=list(configurations.keys()))
+        config = configurations[architecture]
+        print(architecture, config)
+        layers = config['layers']
+
+        #layers = hp.Choice('layers', values=[4])
 
         # tune the number of units per layer
-        min_units = 32
-        max_units = 64
-        units = hp.Int('units', min_value=min_units, max_value=max_units, step=32)
+        # min_units = 20
+        # max_units = 64
+        # units = hp.Int('units', min_value=min_units, max_value=max_units, step=4)
+        
+        #units = hp.Choice('units', values=[24, 28])
+        units = config['units']
         # units = []
         # for i in range(max_layers):
         #     units.append(hp.Int(f'units_{i}', min_value=min_units, max_value=max_units, step=32))
 
         # tune the dropout rate
-        dropout_rate = hp.Choice('dropout_rate', values=[.2, .25, .4, .5])
-
+        #dropout_rate = hp.Choice('dropout_rate', values=[.25, .4])
+        dropout_rate = config['dropout_rate']
         # tune regularization rate
-        l1 = hp.Choice('l1', values=[.000001, .000005, .00001, .00005, .0001, .0005, .001])
-        l2 = -1
+        #l1 = hp.Choice('l1', values=[.000001, .00001, .00005, .0001, .0005, .001])
+        l2 = hp.Choice('l2', values=[.000001, .00001, .0001, .001])
+        #l2 = -1
 
-        recurrent_dropout = 0#hp.Choice('recurrent_dropout', values = [0.0, .25, .5])
+        #recurrent_dropout = 0#hp.Choice('recurrent_dropout', values = [0.0, .25, .5])
         # tune the learning rate for the optimizer
-        learning_rate = hp.Choice('learning_rate', values=[.0001, .00025, .0005, .00075, .001, .0025, .005])
-
+        learning_rate = config['learning_rate']
+        #learning_rate = hp.Choice('learning_rate', values=[.0005, .0025, .005])
+        #dropout_rate = 0
+        recurrent_dropout = 0
+        l1 = 0
+        #l2 = 0
         params = MyParameters(layers=layers, units=units, dropout_rate=dropout_rate, recurrent_dropout=recurrent_dropout, l1=l1, l2=l2, learning_rate=learning_rate)
 
         return self.build_bilstm_model(params)
@@ -155,14 +214,15 @@ class Tuning():
         """
             @brief: builds the model with the specified params
         """
+        print(params.layers, params.units, params.learning_rate)
         # input layer
-        inputs = keras.Input(shape=self.input_shape, name='in1')
-                    # first layer
+        inputs = keras.Input(shape=self.input_shape, name='inp1')
+        # first layer
         x = layers.Bidirectional(layers.LSTM(units=params.units, 
                             recurrent_dropout=params.recurrent_dropout,
                             kernel_regularizer=regularizers.l1_l2(l1=params.l1, l2=params.l2),
                             return_sequences=True, 
-                            name=f'hidden_{0}'))(inputs)
+                            name=f'hdn_{0}'))(inputs)
 
         if params.dropout_rate > 0.0:
             x = layers.Dropout(rate=params.dropout_rate)(x)
@@ -173,7 +233,7 @@ class Tuning():
                             recurrent_dropout=params.recurrent_dropout,
                             kernel_regularizer=regularizers.l1_l2(l1=params.l1, l2=params.l2),
                             return_sequences=True, 
-                            name=f'hidden_{i}'))(x)
+                            name=f'hdn_{i}'))(x)
             
             if params.dropout_rate > 0.0:
                 x = layers.Dropout(rate=params.dropout_rate)(x)
@@ -183,7 +243,7 @@ class Tuning():
                             recurrent_dropout=params.recurrent_dropout,
                             kernel_regularizer=regularizers.l1_l2(l1=params.l1, l2=params.l2),
                             return_sequences=False, 
-                            name=f'hidden_{i+1}'))(x)
+                            name=f'hdn_{i+1}'))(x)
 
         if params.dropout_rate > 0.0:
             x = layers.Dropout(rate=params.dropout_rate)(x)     
@@ -293,7 +353,8 @@ class Tuning():
                         project_name: str = None,
                         logger: TensorBoardLogger = None,
                         X: object = None,
-                        y: object = None):
+                        y: object = None,
+                        validation_split: float = .1):
 
         bayesian = MyTuner(oracle=kt.oracles.BayesianOptimizationOracle(
                             objective=kt.Objective(objective, mode),
@@ -312,7 +373,7 @@ class Tuning():
         bayesian.search(X,
                          y,
                          epochs=epochs,
-                         validation_split=.2)
+                         validation_split=validation_split)
 
         return bayesian
 
